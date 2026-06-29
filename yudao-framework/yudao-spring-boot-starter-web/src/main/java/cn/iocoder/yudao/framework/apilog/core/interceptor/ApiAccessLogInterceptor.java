@@ -42,7 +42,7 @@ public class ApiAccessLogInterceptor implements HandlerInterceptor {
         }
 
         // 打印 request 日志
-        if (!SpringUtils.isProd()) {
+        if (!SpringUtils.isProd() && log.isInfoEnabled()) {
             Map<String, String> queryString = ServletUtils.getParamMap(request);
             String requestBody = ServletUtils.getBody(request);
             if (CollUtil.isEmpty(queryString) && StrUtil.isEmpty(requestBody)) {
@@ -64,7 +64,7 @@ public class ApiAccessLogInterceptor implements HandlerInterceptor {
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
         // 打印 response 日志
-        if (!SpringUtils.isProd()) {
+        if (!SpringUtils.isProd() && log.isInfoEnabled()) {
             StopWatch stopWatch = (StopWatch) request.getAttribute(ATTRIBUTE_STOP_WATCH);
             stopWatch.stop();
             log.info("[afterCompletion][完成请求 URL({}) 耗时({} ms)]",
@@ -94,7 +94,7 @@ public class ApiAccessLogInterceptor implements HandlerInterceptor {
                 return;
             }
             // 打印结果
-            System.out.printf("\tController 方法路径：%s(%s.java:%d)\n", clazz.getName(), clazz.getSimpleName(), lineNumber.get());
+            log.info("\tController 方法路径：{}({}.java:{})", clazz.getName(), clazz.getSimpleName(), lineNumber.get());
         } catch (Exception ignore) {
             // 忽略异常。原因：仅仅打印，非重要逻辑
         }
