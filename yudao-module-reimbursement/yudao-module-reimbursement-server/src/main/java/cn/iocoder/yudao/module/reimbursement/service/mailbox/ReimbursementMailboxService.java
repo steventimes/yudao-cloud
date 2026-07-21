@@ -13,7 +13,7 @@ public interface ReimbursementMailboxService {
 
     ReimbursementMailboxRespVO getMailbox(Long userId, Long id);
 
-    PageResult<ReimbursementMailboxConnectionDO> getMailboxPage(Long userId, ReimbursementMailboxPageReqVO reqVO);
+    PageResult<ReimbursementMailboxRespVO> getMailboxPage(Long userId, ReimbursementMailboxPageReqVO reqVO);
 
     void deleteMailbox(Long userId, Long id);
 

@@ -38,6 +38,7 @@ public class ReimbursementMailboxConnectionDO extends TenantBaseDO {
     /** TLS 校验模式 */
     private String tlsVerification;
     /** 加密后的授权码 */
+    @ToString.Exclude
     private String credentialCiphertext;
     /** 验证状态 */
     private Integer status;

@@ -12,7 +12,6 @@ public class ReimbursementAttachmentRespVO {
     private Long id;
     private Long itemId;
     private String externalArtifactId;
-    private String fileUrl;
     private String fileName;
     private String mimeType;
     private Long size;

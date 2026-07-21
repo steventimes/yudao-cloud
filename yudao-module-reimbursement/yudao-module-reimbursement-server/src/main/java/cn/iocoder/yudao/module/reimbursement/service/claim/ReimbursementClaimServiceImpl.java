@@ -15,6 +15,8 @@ import cn.iocoder.yudao.module.reimbursement.dal.mysql.ReimbursementItemMapper;
 import cn.iocoder.yudao.module.reimbursement.enums.ReimbursementExpenseTypeEnum;
 import cn.iocoder.yudao.module.reimbursement.enums.ReimbursementSourceEnum;
 import cn.iocoder.yudao.module.reimbursement.enums.ReimbursementStatusEnum;
+import cn.iocoder.yudao.framework.security.core.service.SecurityFrameworkService;
+import cn.iocoder.yudao.module.infra.api.file.FileApi;
 import cn.iocoder.yudao.module.system.api.user.AdminUserApi;
 import cn.iocoder.yudao.module.system.api.user.dto.AdminUserRespDTO;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +47,10 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
     private final ReimbursementAttachmentMapper attachmentMapper;
     private final AdminUserApi adminUserApi;
     private final BpmProcessInstanceApi bpmProcessInstanceApi;
+    private final SecurityFrameworkService securityFrameworkService;
+    private final FileApi fileApi;
+
+    private static final String QUERY_ALL_PERMISSION = "reimbursement:claim:query-all";
 
     @Override
     @Transactional
@@ -113,22 +119,22 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
 
     @Override
     public ReimbursementClaimRespVO getClaim(Long userId, Long id) {
-        return buildClaimRespVO(requireOwnedClaim(userId, id));
+        return buildClaimRespVO(requireAccessibleClaim(userId, id));
     }
 
     @Override
     public PageResult<ReimbursementClaimDO> getClaimPage(Long userId, ReimbursementClaimPageReqVO pageReqVO) {
-        return claimMapper.selectPage(userId, false, pageReqVO);
+        return claimMapper.selectPage(userId, hasQueryAllPermission(), pageReqVO);
     }
 
     @Override
     public String getAttachmentAccessUrl(Long userId, Long reimbursementId, Long attachmentId) {
-        requireOwnedClaim(userId, reimbursementId);
+        requireAccessibleClaim(userId, reimbursementId);
         ReimbursementAttachmentDO attachment = attachmentMapper.selectById(attachmentId);
         if (attachment == null || !Objects.equals(attachment.getReimbursementId(), reimbursementId)) {
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_AI_ATTACHMENT_INVALID);
         }
-        return attachment.getFileUrl();
+        return fileApi.presignGetUrl(attachment.getFileUrl(), 300).getCheckedData();
     }
 
     @Override
@@ -237,6 +243,18 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         return claim;
     }
 
+    private ReimbursementClaimDO requireAccessibleClaim(Long userId, Long reimbursementId) {
+        ReimbursementClaimDO claim = claimMapper.selectByIdForUser(reimbursementId, userId, hasQueryAllPermission());
+        if (claim == null) {
+            throw ServiceExceptionUtil.exception(REIMBURSEMENT_CLAIM_NOT_EXISTS);
+        }
+        return claim;
+    }
+
+    private boolean hasQueryAllPermission() {
+        return securityFrameworkService.hasPermission(QUERY_ALL_PERMISSION);
+    }
+
     private void validateCurrency(String currency) {
         if (StrUtil.isNotBlank(currency) && !SUPPORTED_CURRENCY.equals(currency)) {
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_CURRENCY_NOT_SUPPORTED);
@@ -342,7 +360,6 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         attachmentRespVO.setId(attachment.getId());
         attachmentRespVO.setItemId(attachment.getItemId());
         attachmentRespVO.setExternalArtifactId(attachment.getExternalArtifactId());
-        attachmentRespVO.setFileUrl(attachment.getFileUrl());
         attachmentRespVO.setFileName(attachment.getFileName());
         attachmentRespVO.setMimeType(attachment.getMimeType());
         attachmentRespVO.setSize(attachment.getSize());

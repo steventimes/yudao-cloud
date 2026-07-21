@@ -10,6 +10,7 @@ import cn.iocoder.yudao.module.reimbursement.enums.ReimbursementStatusEnum;
 import cn.iocoder.yudao.module.reimbursement.service.claim.ReimbursementClaimService;
 import cn.iocoder.yudao.module.infra.api.file.FileApi;
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
@@ -23,7 +24,7 @@ class ReimbursementAiServiceImplTest extends AbstractReimbursementUnitTest {
         ReimbursementAiServiceImpl service = new ReimbursementAiServiceImpl(mock(FileApi.class), newProperties(),
                 claimMapper,
                 mock(ReimbursementItemMapper.class), mock(ReimbursementAttachmentMapper.class),
-                mock(ReimbursementClaimService.class));
+                mock(ReimbursementClaimService.class), mock(TransactionTemplate.class));
         ReimbursementAiFillReqVO request = new ReimbursementAiFillReqVO();
         request.setReimbursementId(1L);
 
@@ -41,7 +42,7 @@ class ReimbursementAiServiceImplTest extends AbstractReimbursementUnitTest {
         ReimbursementAiServiceImpl service = new ReimbursementAiServiceImpl(mock(FileApi.class), newProperties(),
                 claimMapper,
                 mock(ReimbursementItemMapper.class), mock(ReimbursementAttachmentMapper.class),
-                mock(ReimbursementClaimService.class));
+                mock(ReimbursementClaimService.class), mock(TransactionTemplate.class));
         ReimbursementAiFillReqVO request = new ReimbursementAiFillReqVO();
         request.setReimbursementId(1L);
 

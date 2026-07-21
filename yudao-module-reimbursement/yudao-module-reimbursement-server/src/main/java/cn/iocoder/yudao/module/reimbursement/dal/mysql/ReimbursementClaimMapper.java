@@ -28,4 +28,13 @@ public interface ReimbursementClaimMapper extends BaseMapperX<ReimbursementClaim
         return selectOne(new LambdaQueryWrapperX<ReimbursementClaimDO>().eq(ReimbursementClaimDO::getId, id)
                 .eq(ReimbursementClaimDO::getUserId, userId));
     }
+
+    default ReimbursementClaimDO selectByIdForUser(Long id, Long userId, boolean queryAll) {
+        LambdaQueryWrapperX<ReimbursementClaimDO> query = new LambdaQueryWrapperX<ReimbursementClaimDO>()
+                .eq(ReimbursementClaimDO::getId, id);
+        if (!queryAll) {
+            query.eq(ReimbursementClaimDO::getUserId, userId);
+        }
+        return selectOne(query);
+    }
 }

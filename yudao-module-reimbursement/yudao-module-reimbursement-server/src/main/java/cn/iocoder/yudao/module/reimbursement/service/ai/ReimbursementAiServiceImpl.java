@@ -19,6 +19,7 @@ import cn.iocoder.yudao.module.reimbursement.service.claim.ReimbursementClaimSer
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
@@ -40,6 +41,7 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
     private static final Pattern SHA256_PATTERN = Pattern.compile("^[0-9a-f]{64}$");
     private static final Set<String> ALLOWED_MIME_TYPES = Set.of(
             "application/pdf", "image/png", "image/jpeg", "image/jpg", "image/webp");
+    private static final Set<String> ALLOWED_DOCUMENT_TYPES = Set.of("INVOICE", "RECEIPT", "OTHER");
 
     private final FileApi fileApi;
     private final ReimbursementProperties reimbursementProperties;
@@ -47,13 +49,14 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
     private final ReimbursementItemMapper itemMapper;
     private final ReimbursementAttachmentMapper attachmentMapper;
     private final ReimbursementClaimService claimService;
+    private final TransactionTemplate transactionTemplate;
 
     @Override
     @Transactional
     public ReimbursementAiArtifactUploadRespVO uploadAiArtifact(Long tenantId, Long reimbursementId,
             String externalArtifactId, String sha256,
             String documentType, MultipartFile file) {
-        validateArtifactRequest(externalArtifactId, sha256, file);
+        validateArtifactRequest(externalArtifactId, sha256, documentType, file);
         ReimbursementClaimDO claim = requireAiEmailClaim(reimbursementId);
         if (!Set.of(10, 20, 30).contains(claim.getStatus())) {
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_CLAIM_STATUS_INVALID);
@@ -92,7 +95,6 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
     }
 
     @Override
-    @Transactional
     public ReimbursementAiFillRespVO applyAiFill(Long tenantId, ReimbursementAiFillReqVO reqVO) {
         ReimbursementClaimDO claim = requireAiEmailClaim(reqVO.getReimbursementId());
         if (Objects.equals(claim.getStatus(), ReimbursementStatusEnum.SUBMITTED.getStatus())
@@ -104,20 +106,22 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
         }
         validateAiFill(reqVO);
 
-        itemMapper.deleteByReimbursementId(claim.getId());
-        BigDecimal totalAmount = BigDecimal.ZERO;
-        for (ReimbursementAiFillReqVO.Item itemReqVO : reqVO.getItems()) {
-            ReimbursementItemDO item = insertAiItem(claim.getId(), itemReqVO);
-            totalAmount = totalAmount.add(item.getAmount());
-            linkAttachments(claim.getId(), item.getId(), itemReqVO.getAttachmentExternalArtifactIds());
-        }
-        claim.setReason(StrUtil.blankToDefault(reqVO.getReason(), ""));
-        claim.setCurrency("CNY");
-        claim.setTotalAmount(totalAmount);
-        claim.setAiConfidence(reqVO.getAiConfidence());
-        claim.setAiFailureMessage(null);
-        claim.setStatus(ReimbursementStatusEnum.PENDING_CONFIRMATION.getStatus());
-        claimMapper.updateById(claim);
+        transactionTemplate.executeWithoutResult(status -> {
+            itemMapper.deleteByReimbursementId(claim.getId());
+            BigDecimal totalAmount = BigDecimal.ZERO;
+            for (ReimbursementAiFillReqVO.Item itemReqVO : reqVO.getItems()) {
+                ReimbursementItemDO item = insertAiItem(claim.getId(), itemReqVO);
+                totalAmount = totalAmount.add(item.getAmount());
+                linkAttachments(claim.getId(), item.getId(), itemReqVO.getAttachmentExternalArtifactIds());
+            }
+            claim.setReason(StrUtil.blankToDefault(reqVO.getReason(), ""));
+            claim.setCurrency("CNY");
+            claim.setTotalAmount(totalAmount);
+            claim.setAiConfidence(reqVO.getAiConfidence());
+            claim.setAiFailureMessage(null);
+            claim.setStatus(ReimbursementStatusEnum.PENDING_CONFIRMATION.getStatus());
+            claimMapper.updateById(claim);
+        });
 
         if (reimbursementProperties.getAi().getSubmitMode() == ReimbursementAiSubmitModeEnum.DRAFT_ONLY) {
             return buildAiFillRespVO(claim, false, false, "AI 草稿已生成，等待人工确认");
@@ -133,10 +137,11 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
         }
     }
 
-    private void validateArtifactRequest(String externalArtifactId, String sha256, MultipartFile file) {
+    private void validateArtifactRequest(String externalArtifactId, String sha256, String documentType, MultipartFile file) {
         if (StrUtil.isBlank(externalArtifactId) || externalArtifactId.length() > 128
                 || !SHA256_PATTERN.matcher(sha256).matches() || file == null || file.isEmpty()
-                || file.getSize() > 10L * 1024 * 1024 || !ALLOWED_MIME_TYPES.contains(file.getContentType())) {
+                || file.getSize() > 10L * 1024 * 1024 || !ALLOWED_MIME_TYPES.contains(file.getContentType())
+                || !ALLOWED_DOCUMENT_TYPES.contains(documentType)) {
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_AI_ATTACHMENT_INVALID);
         }
     }
@@ -153,17 +158,39 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
     }
 
     private void validateAiFill(ReimbursementAiFillReqVO reqVO) {
-        if (!"CNY".equals(reqVO.getCurrency()) || reqVO.getItems() == null || reqVO.getItems().isEmpty()) {
+        if (reqVO.getTenantId() == null || reqVO.getTenantId() <= 0
+                || reqVO.getReimbursementId() == null || reqVO.getReimbursementId() <= 0
+                || !"CNY".equals(reqVO.getCurrency()) || reqVO.getItems() == null || reqVO.getItems().isEmpty()
+                || reqVO.getAiConfidence() == null || reqVO.getAiConfidence().compareTo(BigDecimal.ZERO) < 0
+                || reqVO.getAiConfidence().compareTo(BigDecimal.ONE) > 0) {
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_AI_FILL_INVALID);
         }
+        Set<String> clientItemIds = new HashSet<>();
+        Set<String> linkedArtifactIds = new HashSet<>();
         for (ReimbursementAiFillReqVO.Item itemReqVO : reqVO.getItems()) {
-            if (itemReqVO.getAmount() == null || itemReqVO.getAmount().signum() <= 0) {
+            if (itemReqVO.getExpenseDate() == null || itemReqVO.getAmount() == null
+                    || itemReqVO.getAmount().signum() <= 0 || itemReqVO.getTaxAmount() != null
+                    && (itemReqVO.getTaxAmount().signum() < 0
+                    || itemReqVO.getTaxAmount().compareTo(itemReqVO.getAmount()) > 0)
+                    || itemReqVO.getAiConfidence() == null
+                    || itemReqVO.getAiConfidence().compareTo(BigDecimal.ZERO) < 0
+                    || itemReqVO.getAiConfidence().compareTo(BigDecimal.ONE) > 0) {
+                throw ServiceExceptionUtil.exception(REIMBURSEMENT_AI_FILL_INVALID);
+            }
+            try {
+                cn.iocoder.yudao.module.reimbursement.enums.ReimbursementExpenseTypeEnum.valueOf(itemReqVO.getExpenseType());
+            } catch (Exception ex) {
+                throw ServiceExceptionUtil.exception(REIMBURSEMENT_AI_FILL_INVALID);
+            }
+            String clientItemId = StrUtil.blankToDefault(itemReqVO.getClientItemId(), UUID.randomUUID().toString());
+            itemReqVO.setClientItemId(clientItemId);
+            if (!clientItemIds.add(clientItemId)) {
                 throw ServiceExceptionUtil.exception(REIMBURSEMENT_AI_FILL_INVALID);
             }
             for (String externalArtifactId : Optional.ofNullable(itemReqVO.getAttachmentExternalArtifactIds())
                     .orElse(Collections.emptyList())) {
-                if (attachmentMapper.selectByExternalArtifactId(reqVO.getReimbursementId(),
-                        externalArtifactId) == null) {
+                if (!linkedArtifactIds.add(externalArtifactId)
+                        || attachmentMapper.selectByExternalArtifactId(reqVO.getReimbursementId(), externalArtifactId) == null) {
                     throw ServiceExceptionUtil.exception(REIMBURSEMENT_AI_ATTACHMENT_INVALID);
                 }
             }

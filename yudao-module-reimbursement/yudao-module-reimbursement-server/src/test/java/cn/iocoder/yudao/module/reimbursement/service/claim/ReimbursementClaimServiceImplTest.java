@@ -9,6 +9,8 @@ import cn.iocoder.yudao.module.reimbursement.enums.ReimbursementStatusEnum;
 import cn.iocoder.yudao.module.system.api.user.AdminUserApi;
 import cn.iocoder.yudao.module.bpm.api.task.BpmProcessInstanceApi;
 import org.junit.jupiter.api.Test;
+import cn.iocoder.yudao.framework.security.core.service.SecurityFrameworkService;
+import cn.iocoder.yudao.module.infra.api.file.FileApi;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -27,7 +29,8 @@ class ReimbursementClaimServiceImplTest {
         when(claimMapper.selectOwnedById(1L, 10L)).thenReturn(submittedClaim);
         ReimbursementClaimServiceImpl service = new ReimbursementClaimServiceImpl(claimMapper,
                 mock(ReimbursementItemMapper.class), mock(ReimbursementAttachmentMapper.class),
-                mock(AdminUserApi.class), mock(BpmProcessInstanceApi.class));
+                mock(AdminUserApi.class), mock(BpmProcessInstanceApi.class),
+                mock(SecurityFrameworkService.class), mock(FileApi.class));
         ReimbursementClaimSubmitReqVO request = new ReimbursementClaimSubmitReqVO();
         request.setId(1L);
 

@@ -85,9 +85,10 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
     }
 
     @Override
-    public PageResult<ReimbursementMailboxConnectionDO> getMailboxPage(Long userId,
+    public PageResult<ReimbursementMailboxRespVO> getMailboxPage(Long userId,
             ReimbursementMailboxPageReqVO pageReqVO) {
-        return mailboxConnectionMapper.selectPage(userId, pageReqVO);
+        PageResult<ReimbursementMailboxConnectionDO> page = mailboxConnectionMapper.selectPage(userId, pageReqVO);
+        return new PageResult<>(page.getList().stream().map(this::buildMailboxRespVO).toList(), page.getTotal());
     }
 
     @Override

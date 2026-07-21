@@ -2,7 +2,6 @@ package cn.iocoder.yudao.module.reimbursement.controller.admin;
 
 import cn.iocoder.yudao.framework.common.pojo.*;
 import cn.iocoder.yudao.module.reimbursement.controller.admin.vo.mailbox.*;
-import cn.iocoder.yudao.module.reimbursement.dal.dataobject.ReimbursementMailboxConnectionDO;
 import cn.iocoder.yudao.module.reimbursement.service.mailbox.ReimbursementMailboxService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +39,7 @@ public class ReimbursementMailboxController {
 
     @GetMapping("/page")
     @PreAuthorize("@ss.hasPermission('reimbursement:mailbox:manage')")
-    public CommonResult<PageResult<ReimbursementMailboxConnectionDO>> page(@Valid ReimbursementMailboxPageReqVO v) {
+    public CommonResult<PageResult<ReimbursementMailboxRespVO>> page(@Valid ReimbursementMailboxPageReqVO v) {
         return success(service.getMailboxPage(getLoginUserId(), v));
     }
 
