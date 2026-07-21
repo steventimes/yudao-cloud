@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.reimbursement.controller.admin;
 
+import cn.iocoder.yudao.framework.apilog.core.annotation.ApiAccessLog;
 import cn.iocoder.yudao.framework.common.pojo.*;
 import cn.iocoder.yudao.module.reimbursement.controller.admin.vo.mailbox.*;
 import cn.iocoder.yudao.module.reimbursement.service.mailbox.ReimbursementMailboxService;
@@ -28,6 +29,7 @@ public class ReimbursementMailboxController {
      * @param v 请求参数对象
      * @return 处理结果
      */
+    @ApiAccessLog(sanitizeKeys = "authorizationCode")
     @PostMapping("/create")
     @PreAuthorize("@ss.hasPermission('reimbursement:mailbox:manage')")
     public CommonResult<Long> create(@Valid @RequestBody ReimbursementMailboxCreateReqVO v) {
@@ -40,6 +42,7 @@ public class ReimbursementMailboxController {
      * @param v 请求参数对象
      * @return 处理结果
      */
+    @ApiAccessLog(sanitizeKeys = "authorizationCode")
     @PutMapping("/update")
     @PreAuthorize("@ss.hasPermission('reimbursement:mailbox:manage')")
     public CommonResult<Boolean> update(@Valid @RequestBody ReimbursementMailboxUpdateReqVO v) {

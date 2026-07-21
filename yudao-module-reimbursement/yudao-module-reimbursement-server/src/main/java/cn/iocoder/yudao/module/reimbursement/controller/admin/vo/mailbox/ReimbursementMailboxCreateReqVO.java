@@ -1,6 +1,7 @@
 package cn.iocoder.yudao.module.reimbursement.controller.admin.vo.mailbox;
 
 import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.Email;
 import lombok.Data;
 
 /**
@@ -13,6 +14,7 @@ public class ReimbursementMailboxCreateReqVO {
     @NotBlank
     private String providerCode;
     /** 字段 email。 */
+    @Email
     @NotBlank
     private String email;
     /** 邮箱用户名。 */

@@ -1,5 +1,6 @@
 package cn.iocoder.yudao.module.reimbursement.controller.internal;
 
+import cn.iocoder.yudao.framework.apilog.core.annotation.ApiAccessLog;
 import cn.iocoder.yudao.framework.common.pojo.CommonResult;
 import cn.iocoder.yudao.framework.tenant.core.aop.TenantIgnore;
 import cn.iocoder.yudao.framework.tenant.core.util.TenantUtils;
@@ -51,6 +52,7 @@ public class ReimbursementInternalController {
      * @return 处理结果
      */
 
+    @ApiAccessLog(requestEnable = false, responseEnable = false)
     @PostMapping("/mail-access/resolve")
     public CommonResult<ReimbursementMailAccessResolveRespVO> resolveMailboxAccess(
             @RequestHeader("Authorization") String authorizationHeader,
@@ -74,6 +76,7 @@ public class ReimbursementInternalController {
      * @return 处理结果
      */
 
+    @ApiAccessLog(requestEnable = false, responseEnable = false)
     @PostMapping("/ai-artifact/upload")
     public CommonResult<ReimbursementAiArtifactUploadRespVO> uploadAiArtifact(
             @RequestHeader("Authorization") String authorizationHeader,
@@ -96,6 +99,7 @@ public class ReimbursementInternalController {
      * @return 处理结果
      */
 
+    @ApiAccessLog(requestEnable = false, responseEnable = false)
     @PostMapping("/ai-fill")
     public CommonResult<ReimbursementAiFillRespVO> applyAiFill(
             @RequestHeader("Authorization") String authorizationHeader,

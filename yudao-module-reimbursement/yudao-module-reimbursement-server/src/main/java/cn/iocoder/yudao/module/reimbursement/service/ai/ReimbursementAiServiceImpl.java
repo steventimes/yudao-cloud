@@ -115,32 +115,35 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
 
     @Override
     public ReimbursementAiFillRespVO applyAiFill(Long tenantId, ReimbursementAiFillReqVO reqVO) {
-        ReimbursementClaimDO claim = requireAiEmailClaim(reqVO.getReimbursementId());
-        if (Objects.equals(claim.getStatus(), ReimbursementStatusEnum.SUBMITTED.getStatus())
-                || Objects.equals(claim.getStatus(), ReimbursementStatusEnum.PENDING_CONFIRMATION.getStatus())) {
-            return buildAiFillRespVO(claim, false, false, "AI 结果已存在");
-        }
-        if (!Set.of(10, 30).contains(claim.getStatus())) {
-            throw ServiceExceptionUtil.exception(REIMBURSEMENT_CLAIM_STATUS_INVALID);
+        ReimbursementClaimDO initialClaim = requireAiEmailClaim(reqVO.getReimbursementId());
+        if (Objects.equals(initialClaim.getStatus(), ReimbursementStatusEnum.SUBMITTED.getStatus())
+                || Objects.equals(initialClaim.getStatus(), ReimbursementStatusEnum.PENDING_CONFIRMATION.getStatus())) {
+            return buildAiFillRespVO(initialClaim, false, false, "AI 结果已存在");
         }
         validateAiFill(reqVO);
 
-        // 1. 先在独立本地事务中保存 AI 明细和附件关联，确保草稿可以单独提交。
-        transactionTemplate.executeWithoutResult(status -> {
-            itemMapper.deleteByReimbursementId(claim.getId());
+        // 1. 重新读取并校验当前 Claim，再在独立事务中保存 AI 明细和附件关联。
+        ReimbursementClaimDO claim = transactionTemplate.execute(status -> {
+            ReimbursementClaimDO current = requireAiEmailClaim(reqVO.getReimbursementId());
+            if (!Set.of(10, 30).contains(current.getStatus())) {
+                throw ServiceExceptionUtil.exception(REIMBURSEMENT_CLAIM_STATUS_INVALID);
+            }
+            attachmentMapper.clearItemIdByReimbursementId(current.getId());
+            itemMapper.deleteByReimbursementId(current.getId());
             BigDecimal totalAmount = BigDecimal.ZERO;
             for (ReimbursementAiFillReqVO.Item itemReqVO : reqVO.getItems()) {
-                ReimbursementItemDO item = insertAiItem(claim.getId(), itemReqVO);
+                ReimbursementItemDO item = insertAiItem(current.getId(), itemReqVO);
                 totalAmount = totalAmount.add(item.getAmount());
-                linkAttachments(claim.getId(), item.getId(), itemReqVO.getAttachmentExternalArtifactIds());
+                linkAttachments(current.getId(), item.getId(), itemReqVO.getAttachmentExternalArtifactIds());
             }
-            claim.setReason(StrUtil.blankToDefault(reqVO.getReason(), ""));
-            claim.setCurrency("CNY");
-            claim.setTotalAmount(totalAmount);
-            claim.setAiConfidence(reqVO.getAiConfidence());
-            claim.setAiFailureMessage(null);
-            claim.setStatus(ReimbursementStatusEnum.PENDING_CONFIRMATION.getStatus());
-            claimMapper.updateById(claim);
+            current.setReason(StrUtil.blankToDefault(reqVO.getReason(), ""));
+            current.setCurrency("CNY");
+            current.setTotalAmount(totalAmount);
+            current.setAiConfidence(reqVO.getAiConfidence());
+            current.setAiFailureMessage(null);
+            current.setStatus(ReimbursementStatusEnum.PENDING_CONFIRMATION.getStatus());
+            claimMapper.updateById(current);
+            return current;
         });
 
         // 2. 本地事务提交后再调用 BPM，远程调用失败不会回滚已保存的 AI 草稿。

@@ -23,16 +23,48 @@ public interface ReimbursementAttachmentMapper extends BaseMapperX<Reimbursement
         return selectList(ReimbursementAttachmentDO::getReimbursementId, reimbursementId);
     }
 
+    /**
+     * 按报销单和外部附件编号查询附件，确保附件属于当前报销单。
+     *
+     * @param reimbursementId  报销单编号
+     * @param externalArtifactId 外部附件存储编号
+     * @return 匹配的附件，不存在时返回 {@code null}
+     */
     default ReimbursementAttachmentDO selectByExternalArtifactId(Long reimbursementId, String externalArtifactId) {
         return selectOne(new LambdaQueryWrapperX<ReimbursementAttachmentDO>()
                 .eq(ReimbursementAttachmentDO::getReimbursementId, reimbursementId)
                 .eq(ReimbursementAttachmentDO::getExternalArtifactId, externalArtifactId));
     }
 
+    /**
+     * 统计报销单关联的附件数量。
+     *
+     * @param reimbursementId 报销单编号
+     * @return 附件数量
+     */
     default long selectCountByReimbursementId(Long reimbursementId) {
         return selectCount(ReimbursementAttachmentDO::getReimbursementId, reimbursementId);
     }
 
+    /**
+     * 清空报销单下附件的明细关联，避免删除明细后留下无效外键引用。
+     *
+     * @param reimbursementId 报销单编号
+     */
+    default void clearItemIdByReimbursementId(Long reimbursementId) {
+        ReimbursementAttachmentDO attachment = new ReimbursementAttachmentDO();
+        attachment.setItemId(null);
+        update(attachment, new LambdaQueryWrapperX<ReimbursementAttachmentDO>()
+                .eq(ReimbursementAttachmentDO::getReimbursementId, reimbursementId));
+    }
+
+    /**
+     * 更新指定附件所属的报销明细。
+     *
+     * @param reimbursementId   报销单编号
+     * @param externalArtifactId 外部附件存储编号
+     * @param itemId             报销明细编号，可为 {@code null} 表示解除关联
+     */
     default void updateItemId(Long reimbursementId, String externalArtifactId, Long itemId) {
         ReimbursementAttachmentDO d = new ReimbursementAttachmentDO();
         d.setItemId(itemId);

@@ -3,6 +3,7 @@ package cn.iocoder.yudao.module.reimbursement.service.mailbox;
 import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.iocoder.yudao.framework.tenant.core.context.TenantContextHolder;
 import cn.iocoder.yudao.module.reimbursement.config.ReimbursementProperties;
 import cn.iocoder.yudao.module.reimbursement.controller.admin.vo.mailbox.*;
 import cn.iocoder.yudao.module.reimbursement.dal.dataobject.ReimbursementMailboxConnectionDO;
@@ -13,7 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 
 import static cn.iocoder.yudao.module.reimbursement.enums.ErrorCodeConstants.*;
 
@@ -139,7 +142,11 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
     @Override
     public void deleteMailbox(Long userId, Long id) {
         requireOwnedMailbox(userId, id);
-        mailboxConnectionMapper.deleteById(id);
+        int deleted = mailboxConnectionMapper.deletePermanently(id,
+                TenantContextHolder.getRequiredTenantId(), userId);
+        if (deleted != 1) {
+            throw ServiceExceptionUtil.exception(REIMBURSEMENT_MAILBOX_NOT_EXISTS);
+        }
     }
 
     /**
@@ -179,9 +186,18 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
     private void applyMailboxConfig(ReimbursementMailboxConnectionDO mailboxConnection, String providerCode,
             String email, String username, String imapHost, Integer imapPort,
             String tlsVerification) {
-        ReimbursementMailboxProviderEnum provider = ReimbursementMailboxProviderEnum.valueOf(providerCode);
+        ReimbursementMailboxProviderEnum provider;
+        try {
+            provider = ReimbursementMailboxProviderEnum.valueOf(StrUtil.trim(providerCode));
+        } catch (Exception ex) {
+            throw ServiceExceptionUtil.exception(REIMBURSEMENT_MAILBOX_CONFIG_INVALID);
+        }
         mailboxConnection.setProviderCode(provider.name());
-        mailboxConnection.setEmailNormalized(email.trim().toLowerCase());
+        String normalizedEmail = StrUtil.trim(email);
+        if (StrUtil.isBlank(normalizedEmail)) {
+            throw ServiceExceptionUtil.exception(REIMBURSEMENT_MAILBOX_CONFIG_INVALID);
+        }
+        mailboxConnection.setEmailNormalized(normalizedEmail.toLowerCase(Locale.ROOT));
         if (provider == ReimbursementMailboxProviderEnum.QQ_MAIL) {
             mailboxConnection.setImapHost("imap.qq.com");
             mailboxConnection.setImapPort(993);
@@ -191,6 +207,16 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
         }
         if (!reimbursementProperties.getMailbox().isAllowCustomProvider()) {
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_MAILBOX_CUSTOM_DISABLED);
+        }
+        if (StrUtil.isBlank(imapHost) || imapHost.chars().anyMatch(Character::isWhitespace)
+                || imapHost.startsWith("http://") || imapHost.startsWith("https://")
+                || imapHost.contains("/") || imapPort == null || imapPort < 1 || imapPort > 65535
+                || StrUtil.isBlank(username) || !Set.of("strict", "insecure-dev").contains(tlsVerification)) {
+            throw ServiceExceptionUtil.exception(REIMBURSEMENT_MAILBOX_CONFIG_INVALID);
+        }
+        if ("insecure-dev".equals(tlsVerification)
+                && !Set.of("greenmail", "localhost", "127.0.0.1", "::1").contains(imapHost)) {
+            throw ServiceExceptionUtil.exception(REIMBURSEMENT_MAILBOX_CONFIG_INVALID);
         }
         mailboxConnection.setImapHost(imapHost);
         mailboxConnection.setImapPort(imapPort);

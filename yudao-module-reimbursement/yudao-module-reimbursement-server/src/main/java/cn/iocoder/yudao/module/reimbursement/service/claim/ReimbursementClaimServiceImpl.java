@@ -98,6 +98,7 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         claim.setStatus(ReimbursementStatusEnum.DRAFT.getStatus());
         claimMapper.updateById(claim);
 
+        attachmentMapper.clearItemIdByReimbursementId(claim.getId());
         itemMapper.deleteByReimbursementId(claim.getId());
         saveItems(claim.getId(), updateReqVO.getItems(), true);
     }

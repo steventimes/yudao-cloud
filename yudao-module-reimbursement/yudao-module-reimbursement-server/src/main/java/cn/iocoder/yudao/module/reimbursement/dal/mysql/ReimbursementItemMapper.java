@@ -23,6 +23,11 @@ public interface ReimbursementItemMapper extends BaseMapperX<ReimbursementItemDO
         return selectList(ReimbursementItemDO::getReimbursementId, reimbursementId);
     }
 
+    /**
+     * 删除报销单下的全部明细，供人工重建或 AI 重建明细前清理旧数据。
+     *
+     * @param reimbursementId 报销单编号
+     */
     default void deleteByReimbursementId(Long reimbursementId) {
         delete(new LambdaQueryWrapperX<ReimbursementItemDO>().eq(ReimbursementItemDO::getReimbursementId,
                 reimbursementId));

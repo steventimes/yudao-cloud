@@ -15,7 +15,7 @@ public interface ReimbursementAiService {
             String documentType, MultipartFile file);
 
     /**
-     * 执行 applyAiFill 业务操作。
+     * 应用 AI 识别结果
      * 
      * @param tenantId 租户编号
      * @param reqVO    请求参数对象
