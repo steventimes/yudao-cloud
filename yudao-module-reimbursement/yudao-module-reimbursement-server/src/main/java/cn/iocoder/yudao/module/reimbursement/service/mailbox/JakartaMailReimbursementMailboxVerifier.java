@@ -14,13 +14,24 @@ import static cn.iocoder.yudao.module.reimbursement.enums.ErrorCodeConstants.REI
 
 /**
  * Jakarta Mail 邮箱连接验证器
- *
+ * 
  * @author Codex
  */
 @Component
 public class JakartaMailReimbursementMailboxVerifier implements ReimbursementMailboxVerifier {
 
     private static final Set<String> INSECURE_DEV_ALLOWED_HOSTS = Set.of("greenmail", "localhost", "127.0.0.1", "::1");
+
+    /**
+     * 验证邮箱配置。
+     * 
+     * @param host              邮箱服务器地址
+     * @param port              邮箱服务器端口
+     * @param username          邮箱用户名
+     * @param authorizationCode 邮箱授权码
+     * @param tlsVerification   TLS 校验模式
+     * @return 处理结果
+     */
 
     @Override
     public void verify(String host, int port, String username, String authorizationCode, String tlsVerification) {
@@ -42,6 +53,12 @@ public class JakartaMailReimbursementMailboxVerifier implements ReimbursementMai
         }
     }
 
+    /**
+     * 校验TlsVerification参数。
+     * 
+     * @param host            邮箱服务器地址
+     * @param tlsVerification TLS 校验模式
+     */
     private void validateTlsVerification(String host, String tlsVerification) {
         if ("strict".equals(tlsVerification)) {
             return;
@@ -51,6 +68,11 @@ public class JakartaMailReimbursementMailboxVerifier implements ReimbursementMai
         }
     }
 
+    /**
+     * 构建MailProperties结果。
+     * 
+     * @param tlsVerification TLS 校验模式
+     */
     private Properties buildMailProperties(String tlsVerification) {
         Properties properties = new Properties();
         properties.put("mail.imaps.connectiontimeout", "15000");
@@ -65,6 +87,11 @@ public class JakartaMailReimbursementMailboxVerifier implements ReimbursementMai
         return properties;
     }
 
+    /**
+     * 处理closeQuietly逻辑。
+     * 
+     * @param folder 方法调用所需的folder数据
+     */
     private void closeQuietly(Folder folder) {
         try {
             if (folder != null && folder.isOpen()) {
@@ -74,6 +101,11 @@ public class JakartaMailReimbursementMailboxVerifier implements ReimbursementMai
         }
     }
 
+    /**
+     * 处理closeQuietly逻辑。
+     * 
+     * @param store 方法调用所需的store数据
+     */
     private void closeQuietly(Store store) {
         try {
             if (store != null && store.isConnected()) {

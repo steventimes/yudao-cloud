@@ -2,6 +2,10 @@ package cn.iocoder.yudao.module.reimbursement.controller.internal.vo;
 
 import lombok.Data;
 
+/**
+ * 响应结果。
+ */
+
 @Data
 public class ReimbursementAiArtifactUploadRespVO {
     private String externalArtifactId;

@@ -8,8 +8,19 @@ import java.util.*;
 import cn.iocoder.yudao.module.reimbursement.dal.dataobject.ReimbursementMailboxConnectionDO;
 import cn.iocoder.yudao.module.reimbursement.controller.admin.vo.mailbox.ReimbursementMailboxPageReqVO;
 
+/**
+ * ReimbursementMailboxConnectionMapper，数据库访问 Mapper。
+ */
+
 @Mapper
 public interface ReimbursementMailboxConnectionMapper extends BaseMapperX<ReimbursementMailboxConnectionDO> {
+    /**
+     * 查询数据。
+     * 
+     * @param ownerUserId 邮箱绑定所属用户编号
+     * @param reqVO       请求参数对象
+     * @return 处理结果
+     */
     default PageResult<ReimbursementMailboxConnectionDO> selectPage(Long ownerUserId,
             ReimbursementMailboxPageReqVO reqVO) {
         return selectPage(reqVO,

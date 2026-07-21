@@ -11,6 +11,10 @@ import org.springframework.web.bind.annotation.*;
 import static cn.iocoder.yudao.framework.common.pojo.CommonResult.success;
 import static cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUtils.getLoginUserId;
 
+/**
+ * 接口控制器。
+ */
+
 @RestController
 @RequestMapping("/reimbursement/mail-import")
 @Validated
@@ -18,6 +22,12 @@ import static cn.iocoder.yudao.framework.security.core.util.SecurityFrameworkUti
 public class ReimbursementMailImportController {
     private final ReimbursementMailImportService service;
 
+    /**
+     * 启动邮箱导入。
+     * 
+     * @param v 请求参数对象
+     * @return 处理结果
+     */
     @PostMapping("/start")
     @PreAuthorize("@ss.hasPermission('reimbursement:mail-import:start')")
     public CommonResult<ReimbursementMailImportStartRespVO> start(

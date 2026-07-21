@@ -12,7 +12,7 @@ import java.time.LocalDate;
 
 /**
  * 报销明细 DO
- *
+ * 
  * @author Codex
  */
 @TableName("reimbursement_item")
@@ -20,31 +20,29 @@ import java.time.LocalDate;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class ReimbursementItemDO extends TenantBaseDO {
-
-    /** 编号 */
+    /** 编号。 */
     @TableId
     private Long id;
-    /** 报销编号 */
+    /** 报销单编号。 */
     private Long reimbursementId;
-    /** 请求内明细编号 */
+    /** 明细客户端编号。 */
     private String clientItemId;
-    /** 费用日期 */
+    /** 费用日期。 */
     private LocalDate expenseDate;
-    /** 费用类型 */
+    /** 费用类型。 */
     private String expenseType;
-    /** 商户名称 */
+    /** 商户名称。 */
     private String merchantName;
-    /** 金额 */
+    /** 金额。 */
     private BigDecimal amount;
-    /** 税额 */
+    /** 税额。 */
     private BigDecimal taxAmount;
-    /** 发票号码 */
+    /** 发票号码。 */
     private String invoiceNumber;
-    /** 备注 */
+    /** 备注。 */
     private String remark;
-    /** AI 置信度 */
+    /** AI 识别置信度。 */
     private BigDecimal aiConfidence;
-    /** 是否人工修改 */
     private Boolean manuallyModified;
 
 }

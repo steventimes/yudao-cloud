@@ -16,7 +16,7 @@ import static cn.iocoder.yudao.module.reimbursement.enums.ErrorCodeConstants.REI
 
 /**
  * 报销邮件导入 Service 实现类
- *
+ * 
  * @author Codex
  */
 @Service
@@ -29,6 +29,14 @@ public class ReimbursementMailImportServiceImpl implements ReimbursementMailImpo
     private final ReimbursementClaimService claimService;
     private final ReimbursementMailAccessGrantService grantService;
     private final ReimbursementProperties reimbursementProperties;
+
+    /**
+     * 启动邮箱导入。
+     * 
+     * @param userId     用户编号
+     * @param startReqVO 邮件导入启动参数
+     * @return 处理结果
+     */
 
     @Override
     public ReimbursementMailImportStartRespVO start(Long userId, ReimbursementMailImportStartReqVO startReqVO) {
@@ -49,6 +57,11 @@ public class ReimbursementMailImportServiceImpl implements ReimbursementMailImpo
         return startRespVO;
     }
 
+    /**
+     * 校验DateRange参数。
+     * 
+     * @param startReqVO 邮件导入启动参数
+     */
     private void validateDateRange(ReimbursementMailImportStartReqVO startReqVO) {
         boolean hasLookbackDays = startReqVO.getLookbackDays() != null;
         boolean hasDateRange = startReqVO.getFromDate() != null || startReqVO.getToDate() != null;

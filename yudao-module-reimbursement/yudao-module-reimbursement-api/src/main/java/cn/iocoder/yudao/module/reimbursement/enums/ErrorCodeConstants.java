@@ -2,6 +2,9 @@ package cn.iocoder.yudao.module.reimbursement.enums;
 
 import cn.iocoder.yudao.framework.common.exception.ErrorCode;
 
+/**
+ * ErrorCodeConstants，枚举定义。
+ */
 public interface ErrorCodeConstants {
     ErrorCode REIMBURSEMENT_CLAIM_NOT_EXISTS = new ErrorCode(1_070_000_000, "报销单不存在");
     ErrorCode REIMBURSEMENT_CLAIM_NOT_OWNER = new ErrorCode(1_070_000_001, "无权访问该报销单");

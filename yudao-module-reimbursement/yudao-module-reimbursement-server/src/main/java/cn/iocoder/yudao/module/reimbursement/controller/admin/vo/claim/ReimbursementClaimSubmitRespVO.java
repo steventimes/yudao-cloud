@@ -7,9 +7,16 @@ import java.math.BigDecimal;
 import java.time.*;
 import java.util.*;
 
+/**
+ * 响应结果。
+ */
+
 @Data
 public class ReimbursementClaimSubmitRespVO {
+    /** 报销单编号。 */
     private Long reimbursementId;
+    /** 状态。 */
     private Integer status;
+    /** 流程实例编号。 */
     private String processInstanceId;
 }

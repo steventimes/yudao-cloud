@@ -32,7 +32,7 @@ import static cn.iocoder.yudao.module.reimbursement.enums.ErrorCodeConstants.*;
 
 /**
  * 报销申请 Service 实现类
- *
+ * 
  * @author Codex
  */
 @Service
@@ -52,6 +52,13 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
 
     private static final String QUERY_ALL_PERMISSION = "reimbursement:claim:query-all";
 
+    /**
+     * 创建报销数据。
+     * 
+     * @param userId      用户编号
+     * @param createReqVO 创建请求参数
+     * @return 处理结果
+     */
     @Override
     @Transactional
     public Long createClaim(Long userId, ReimbursementClaimCreateReqVO createReqVO) {
@@ -68,6 +75,13 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         return claim.getId();
     }
 
+    /**
+     * 更新报销数据。
+     * 
+     * @param userId      用户编号
+     * @param updateReqVO 更新请求参数
+     * @return 处理结果
+     */
     @Override
     @Transactional
     public void updateClaim(Long userId, ReimbursementClaimUpdateReqVO updateReqVO) {
@@ -88,6 +102,13 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         saveItems(claim.getId(), updateReqVO.getItems(), true);
     }
 
+    /**
+     * 确认报销数据。
+     * 
+     * @param userId       用户编号
+     * @param confirmReqVO 确认请求参数
+     * @return 处理结果
+     */
     @Override
     @Transactional
     public void confirmClaim(Long userId, ReimbursementClaimConfirmReqVO confirmReqVO) {
@@ -104,6 +125,13 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         updateClaim(userId, updateReqVO);
     }
 
+    /**
+     * 提交报销审批。
+     * 
+     * @param userId      用户编号
+     * @param submitReqVO 提交请求参数
+     * @return 处理结果
+     */
     @Override
     @Transactional
     public ReimbursementClaimSubmitRespVO submitClaim(Long userId, ReimbursementClaimSubmitReqVO submitReqVO) {
@@ -117,15 +145,40 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         return submitInternal(userId, claim, submitReqVO.getStartUserSelectAssignees());
     }
 
+    /**
+     * 查询单条报销数据。
+     * 
+     * @param userId 用户编号
+     * @param id     记录编号
+     * @return 处理结果
+     */
+
     @Override
     public ReimbursementClaimRespVO getClaim(Long userId, Long id) {
         return buildClaimRespVO(requireAccessibleClaim(userId, id));
     }
 
+    /**
+     * 查询单条报销数据。
+     * 
+     * @param userId    用户编号
+     * @param pageReqVO 分页查询参数
+     * @return 处理结果
+     */
+
     @Override
     public PageResult<ReimbursementClaimDO> getClaimPage(Long userId, ReimbursementClaimPageReqVO pageReqVO) {
         return claimMapper.selectPage(userId, hasQueryAllPermission(), pageReqVO);
     }
+
+    /**
+     * 查询单条报销数据。
+     * 
+     * @param userId          用户编号
+     * @param reimbursementId 报销单编号
+     * @param attachmentId    附件编号
+     * @return 处理结果
+     */
 
     @Override
     public String getAttachmentAccessUrl(Long userId, Long reimbursementId, Long attachmentId) {
@@ -137,6 +190,13 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         return fileApi.presignGetUrl(attachment.getFileUrl(), 300).getCheckedData();
     }
 
+    /**
+     * 创建报销数据。
+     * 
+     * @param userId              用户编号
+     * @param mailboxConnectionId 邮箱连接编号
+     * @return 处理结果
+     */
     @Override
     @Transactional
     public Long createAiProcessingClaim(Long userId, Long mailboxConnectionId) {
@@ -158,6 +218,15 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         return claim.getId();
     }
 
+    /**
+     * 标记处理状态。
+     * 
+     * @param tenantId        租户编号
+     * @param reimbursementId 报销单编号
+     * @param failureMessage  AI 处理失败原因
+     * @return 处理结果
+     */
+
     @Override
     public void markAiFailedIfProcessing(Long tenantId, Long reimbursementId, String failureMessage) {
         ReimbursementClaimDO claim = claimMapper.selectById(reimbursementId);
@@ -169,6 +238,14 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         claimMapper.updateById(claim);
     }
 
+    /**
+     * 自动提交报销审批。
+     * 
+     * @param tenantId        租户编号
+     * @param ownerUserId     邮箱绑定所属用户编号
+     * @param reimbursementId 报销单编号
+     * @return 处理结果
+     */
     @Override
     @Transactional
     public ReimbursementClaimSubmitRespVO autoSubmitClaim(Long tenantId, Long ownerUserId, Long reimbursementId) {
@@ -199,6 +276,7 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
             return buildSubmitRespVO(claim);
         }
 
+        // 组装 BPM 所需业务变量，并使用报销单 ID 作为流程业务键，保证流程可追溯。
         Map<String, Object> processVariables = buildProcessVariables(userId, claim);
         BpmProcessInstanceCreateReqDTO createProcessReqDTO = new BpmProcessInstanceCreateReqDTO();
         createProcessReqDTO.setProcessDefinitionKey(BPM_PROCESS_DEFINITION_KEY);
@@ -215,6 +293,12 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         return buildSubmitRespVO(claim);
     }
 
+    /**
+     * 构建ProcessVariables结果。
+     * 
+     * @param userId 用户编号
+     * @param claim  报销单数据
+     */
     private Map<String, Object> buildProcessVariables(Long userId, ReimbursementClaimDO claim) {
         Map<String, Object> processVariables = new LinkedHashMap<>();
         processVariables.put("reimbursementId", claim.getId());
@@ -227,6 +311,11 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         return processVariables;
     }
 
+    /**
+     * 构建SubmitRespVO结果。
+     * 
+     * @param claim 报销单数据
+     */
     private ReimbursementClaimSubmitRespVO buildSubmitRespVO(ReimbursementClaimDO claim) {
         ReimbursementClaimSubmitRespVO submitRespVO = new ReimbursementClaimSubmitRespVO();
         submitRespVO.setReimbursementId(claim.getId());
@@ -235,6 +324,12 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         return submitRespVO;
     }
 
+    /**
+     * 获取并校验OwnedClaim数据。
+     * 
+     * @param userId          用户编号
+     * @param reimbursementId 报销单编号
+     */
     private ReimbursementClaimDO requireOwnedClaim(Long userId, Long reimbursementId) {
         ReimbursementClaimDO claim = claimMapper.selectOwnedById(reimbursementId, userId);
         if (claim == null) {
@@ -243,7 +338,14 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         return claim;
     }
 
+    /**
+     * 获取并校验AccessibleClaim数据。
+     * 
+     * @param userId          用户编号
+     * @param reimbursementId 报销单编号
+     */
     private ReimbursementClaimDO requireAccessibleClaim(Long userId, Long reimbursementId) {
+        // query-all 只扩大查询范围，详情和附件仍需经过同一套可访问性校验。
         ReimbursementClaimDO claim = claimMapper.selectByIdForUser(reimbursementId, userId, hasQueryAllPermission());
         if (claim == null) {
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_CLAIM_NOT_EXISTS);
@@ -251,16 +353,27 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         return claim;
     }
 
+    /** 判断当前用户是否拥有查询全部报销单的权限。 */
     private boolean hasQueryAllPermission() {
         return securityFrameworkService.hasPermission(QUERY_ALL_PERMISSION);
     }
 
+    /**
+     * 校验Currency参数。
+     * 
+     * @param currency 币种
+     */
     private void validateCurrency(String currency) {
         if (StrUtil.isNotBlank(currency) && !SUPPORTED_CURRENCY.equals(currency)) {
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_CURRENCY_NOT_SUPPORTED);
         }
     }
 
+    /**
+     * 校验Items参数。
+     * 
+     * @param itemReqVOList 报销明细请求列表
+     */
     private void validateItems(List<ReimbursementItemReqVO> itemReqVOList) {
         if (itemReqVOList == null || itemReqVOList.isEmpty()) {
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_ITEM_EMPTY);
@@ -271,6 +384,12 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         }
     }
 
+    /**
+     * 校验Item参数。
+     * 
+     * @param itemReqVO     报销明细请求对象
+     * @param clientItemIds 已使用的明细客户端编号集合
+     */
     private void validateItem(ReimbursementItemReqVO itemReqVO, Set<String> clientItemIds) {
         try {
             ReimbursementExpenseTypeEnum.valueOf(itemReqVO.getExpenseType());
@@ -291,12 +410,24 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         itemReqVO.setClientItemId(clientItemId);
     }
 
+    /**
+     * 计算TotalAmount结果。
+     * 
+     * @param itemReqVOList 报销明细请求列表
+     */
     private BigDecimal calculateTotalAmount(List<ReimbursementItemReqVO> itemReqVOList) {
         return itemReqVOList.stream()
                 .map(ReimbursementItemReqVO::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
+    /**
+     * 保存Items数据。
+     * 
+     * @param reimbursementId  报销单编号
+     * @param itemReqVOList    报销明细请求列表
+     * @param manuallyModified 是否为人工修改数据
+     */
     private void saveItems(Long reimbursementId, List<ReimbursementItemReqVO> itemReqVOList, boolean manuallyModified) {
         for (ReimbursementItemReqVO itemReqVO : itemReqVOList) {
             ReimbursementItemDO item = new ReimbursementItemDO();
@@ -314,6 +445,11 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         }
     }
 
+    /**
+     * 构建ClaimRespVO结果。
+     * 
+     * @param claim 报销单数据
+     */
     private ReimbursementClaimRespVO buildClaimRespVO(ReimbursementClaimDO claim) {
         ReimbursementClaimRespVO claimRespVO = new ReimbursementClaimRespVO();
         claimRespVO.setId(claim.getId());
@@ -339,6 +475,11 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         return claimRespVO;
     }
 
+    /**
+     * 构建ItemRespVO结果。
+     * 
+     * @param item 报销明细数据
+     */
     private ReimbursementItemRespVO buildItemRespVO(ReimbursementItemDO item) {
         ReimbursementItemRespVO itemRespVO = new ReimbursementItemRespVO();
         itemRespVO.setId(item.getId());
@@ -355,6 +496,11 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         return itemRespVO;
     }
 
+    /**
+     * 构建AttachmentRespVO结果。
+     * 
+     * @param attachment 附件数据
+     */
     private ReimbursementAttachmentRespVO buildAttachmentRespVO(ReimbursementAttachmentDO attachment) {
         ReimbursementAttachmentRespVO attachmentRespVO = new ReimbursementAttachmentRespVO();
         attachmentRespVO.setId(attachment.getId());

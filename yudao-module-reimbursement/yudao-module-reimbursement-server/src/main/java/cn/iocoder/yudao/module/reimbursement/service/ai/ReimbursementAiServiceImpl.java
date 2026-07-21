@@ -31,7 +31,7 @@ import static cn.iocoder.yudao.module.reimbursement.enums.ErrorCodeConstants.*;
 
 /**
  * 报销 AI 回调 Service 实现类
- *
+ * 
  * @author Codex
  */
 @Service
@@ -51,6 +51,17 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
     private final ReimbursementClaimService claimService;
     private final TransactionTemplate transactionTemplate;
 
+    /**
+     * 上传报销附件。
+     * 
+     * @param tenantId           租户编号
+     * @param reimbursementId    报销单编号
+     * @param externalArtifactId 外部附件产物编号
+     * @param sha256             文件 SHA-256 摘要
+     * @param documentType       单据类型
+     * @param file               上传的附件文件
+     * @return 处理结果
+     */
     @Override
     @Transactional
     public ReimbursementAiArtifactUploadRespVO uploadAiArtifact(Long tenantId, Long reimbursementId,
@@ -94,6 +105,14 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
         return buildArtifactUploadRespVO(attachment);
     }
 
+    /**
+     * 应用 AI 识别结果。
+     * 
+     * @param tenantId 租户编号
+     * @param reqVO    请求参数对象
+     * @return 处理结果
+     */
+
     @Override
     public ReimbursementAiFillRespVO applyAiFill(Long tenantId, ReimbursementAiFillReqVO reqVO) {
         ReimbursementClaimDO claim = requireAiEmailClaim(reqVO.getReimbursementId());
@@ -106,6 +125,7 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
         }
         validateAiFill(reqVO);
 
+        // 1. 先在独立本地事务中保存 AI 明细和附件关联，确保草稿可以单独提交。
         transactionTemplate.executeWithoutResult(status -> {
             itemMapper.deleteByReimbursementId(claim.getId());
             BigDecimal totalAmount = BigDecimal.ZERO;
@@ -123,6 +143,7 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
             claimMapper.updateById(claim);
         });
 
+        // 2. 本地事务提交后再调用 BPM，远程调用失败不会回滚已保存的 AI 草稿。
         if (reimbursementProperties.getAi().getSubmitMode() == ReimbursementAiSubmitModeEnum.DRAFT_ONLY) {
             return buildAiFillRespVO(claim, false, false, "AI 草稿已生成，等待人工确认");
         }
@@ -137,7 +158,16 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
         }
     }
 
-    private void validateArtifactRequest(String externalArtifactId, String sha256, String documentType, MultipartFile file) {
+    /**
+     * 校验ArtifactRequest参数。
+     * 
+     * @param externalArtifactId 外部附件产物编号
+     * @param sha256             文件 SHA-256 摘要
+     * @param documentType       单据类型
+     * @param file               上传的附件文件
+     */
+    private void validateArtifactRequest(String externalArtifactId, String sha256, String documentType,
+            MultipartFile file) {
         if (StrUtil.isBlank(externalArtifactId) || externalArtifactId.length() > 128
                 || !SHA256_PATTERN.matcher(sha256).matches() || file == null || file.isEmpty()
                 || file.getSize() > 10L * 1024 * 1024 || !ALLOWED_MIME_TYPES.contains(file.getContentType())
@@ -146,6 +176,11 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
         }
     }
 
+    /**
+     * 获取并校验AiEmailClaim数据。
+     * 
+     * @param reimbursementId 报销单编号
+     */
     private ReimbursementClaimDO requireAiEmailClaim(Long reimbursementId) {
         ReimbursementClaimDO claim = claimMapper.selectById(reimbursementId);
         if (claim == null) {
@@ -157,6 +192,11 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
         return claim;
     }
 
+    /**
+     * 校验AiFill参数。
+     * 
+     * @param reqVO 请求参数对象
+     */
     private void validateAiFill(ReimbursementAiFillReqVO reqVO) {
         if (reqVO.getTenantId() == null || reqVO.getTenantId() <= 0
                 || reqVO.getReimbursementId() == null || reqVO.getReimbursementId() <= 0
@@ -165,20 +205,22 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
                 || reqVO.getAiConfidence().compareTo(BigDecimal.ONE) > 0) {
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_AI_FILL_INVALID);
         }
+        // 识别结果同时校验明细编号和附件编号，避免一次回调重复覆盖业务数据。
         Set<String> clientItemIds = new HashSet<>();
         Set<String> linkedArtifactIds = new HashSet<>();
         for (ReimbursementAiFillReqVO.Item itemReqVO : reqVO.getItems()) {
             if (itemReqVO.getExpenseDate() == null || itemReqVO.getAmount() == null
                     || itemReqVO.getAmount().signum() <= 0 || itemReqVO.getTaxAmount() != null
-                    && (itemReqVO.getTaxAmount().signum() < 0
-                    || itemReqVO.getTaxAmount().compareTo(itemReqVO.getAmount()) > 0)
+                            && (itemReqVO.getTaxAmount().signum() < 0
+                                    || itemReqVO.getTaxAmount().compareTo(itemReqVO.getAmount()) > 0)
                     || itemReqVO.getAiConfidence() == null
                     || itemReqVO.getAiConfidence().compareTo(BigDecimal.ZERO) < 0
                     || itemReqVO.getAiConfidence().compareTo(BigDecimal.ONE) > 0) {
                 throw ServiceExceptionUtil.exception(REIMBURSEMENT_AI_FILL_INVALID);
             }
             try {
-                cn.iocoder.yudao.module.reimbursement.enums.ReimbursementExpenseTypeEnum.valueOf(itemReqVO.getExpenseType());
+                cn.iocoder.yudao.module.reimbursement.enums.ReimbursementExpenseTypeEnum
+                        .valueOf(itemReqVO.getExpenseType());
             } catch (Exception ex) {
                 throw ServiceExceptionUtil.exception(REIMBURSEMENT_AI_FILL_INVALID);
             }
@@ -190,13 +232,20 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
             for (String externalArtifactId : Optional.ofNullable(itemReqVO.getAttachmentExternalArtifactIds())
                     .orElse(Collections.emptyList())) {
                 if (!linkedArtifactIds.add(externalArtifactId)
-                        || attachmentMapper.selectByExternalArtifactId(reqVO.getReimbursementId(), externalArtifactId) == null) {
+                        || attachmentMapper.selectByExternalArtifactId(reqVO.getReimbursementId(),
+                                externalArtifactId) == null) {
                     throw ServiceExceptionUtil.exception(REIMBURSEMENT_AI_ATTACHMENT_INVALID);
                 }
             }
         }
     }
 
+    /**
+     * 创建并保存AiItem数据。
+     * 
+     * @param reimbursementId 报销单编号
+     * @param itemReqVO       报销明细请求对象
+     */
     private ReimbursementItemDO insertAiItem(Long reimbursementId, ReimbursementAiFillReqVO.Item itemReqVO) {
         ReimbursementItemDO item = new ReimbursementItemDO();
         item.setReimbursementId(reimbursementId);
@@ -214,12 +263,24 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
         return item;
     }
 
+    /**
+     * 关联Attachments数据。
+     * 
+     * @param reimbursementId     报销单编号
+     * @param itemId              明细编号
+     * @param externalArtifactIds 外部附件产物编号列表
+     */
     private void linkAttachments(Long reimbursementId, Long itemId, List<String> externalArtifactIds) {
         for (String externalArtifactId : Optional.ofNullable(externalArtifactIds).orElse(Collections.emptyList())) {
             attachmentMapper.updateItemId(reimbursementId, externalArtifactId, itemId);
         }
     }
 
+    /**
+     * 处理readFileBytes逻辑。
+     * 
+     * @param file 上传的附件文件
+     */
     private byte[] readFileBytes(MultipartFile file) {
         try {
             return file.getBytes();
@@ -228,6 +289,11 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
         }
     }
 
+    /**
+     * 处理sha256Hex逻辑。
+     * 
+     * @param content 方法调用所需的content数据
+     */
     private String sha256Hex(byte[] content) {
         try {
             MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
@@ -242,6 +308,11 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
         }
     }
 
+    /**
+     * 构建ArtifactUploadRespVO结果。
+     * 
+     * @param attachment 附件数据
+     */
     private ReimbursementAiArtifactUploadRespVO buildArtifactUploadRespVO(ReimbursementAttachmentDO attachment) {
         ReimbursementAiArtifactUploadRespVO respVO = new ReimbursementAiArtifactUploadRespVO();
         respVO.setExternalArtifactId(attachment.getExternalArtifactId());

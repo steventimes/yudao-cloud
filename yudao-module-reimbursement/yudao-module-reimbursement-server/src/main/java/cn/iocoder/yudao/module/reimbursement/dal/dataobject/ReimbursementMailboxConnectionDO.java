@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 
 /**
  * 用户报销邮箱绑定 DO
- *
+ * 
  * @author Codex
  */
 @TableName("reimbursement_mailbox_connection")
@@ -19,32 +19,23 @@ import java.time.LocalDateTime;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class ReimbursementMailboxConnectionDO extends TenantBaseDO {
-
-    /** 编号 */
+    /** 编号。 */
     @TableId
     private Long id;
-    /** 所属用户编号 */
     private Long ownerUserId;
-    /** 邮箱提供方 */
     private String providerCode;
-    /** 规范化邮箱地址 */
     private String emailNormalized;
-    /** IMAP 用户名 */
+    /** 邮箱用户名。 */
     private String username;
-    /** IMAPS 主机 */
     private String imapHost;
-    /** IMAPS 端口 */
     private Integer imapPort;
-    /** TLS 校验模式 */
     private String tlsVerification;
-    /** 加密后的授权码 */
+    /** 字段 credentialCiphertext。 */
     @ToString.Exclude
     private String credentialCiphertext;
-    /** 验证状态 */
+    /** 状态。 */
     private Integer status;
-    /** 最近验证时间 */
     private LocalDateTime verifiedAt;
-    /** 最近失败原因 */
     private String lastFailureMessage;
 
 }

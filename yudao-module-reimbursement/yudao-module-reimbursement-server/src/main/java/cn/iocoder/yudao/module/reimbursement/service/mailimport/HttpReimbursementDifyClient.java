@@ -19,7 +19,7 @@ import static cn.iocoder.yudao.module.reimbursement.enums.ErrorCodeConstants.REI
 
 /**
  * HTTP 报销 Dify Workflow 客户端
- *
+ * 
  * @author Codex
  */
 @Slf4j
@@ -32,6 +32,12 @@ public class HttpReimbursementDifyClient implements ReimbursementDifyClient {
     private final RestTemplateBuilder restTemplateBuilder;
     private final ReimbursementProperties reimbursementProperties;
 
+    /**
+     * 校验并获取数据。
+     * 
+     * @return 处理结果
+     */
+
     @Override
     public void requireConfigured() {
         ReimbursementProperties.Dify difyProperties = reimbursementProperties.getDify();
@@ -40,6 +46,13 @@ public class HttpReimbursementDifyClient implements ReimbursementDifyClient {
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_DIFY_NOT_CONFIGURED);
         }
     }
+
+    /**
+     * 执行 run 业务操作。
+     * 
+     * @param request Dify 工作流执行请求
+     * @return 处理结果
+     */
 
     @Override
     public ReimbursementDifyRunResult run(ReimbursementDifyRunRequest request) {
@@ -70,6 +83,11 @@ public class HttpReimbursementDifyClient implements ReimbursementDifyClient {
         }
     }
 
+    /**
+     * 构建RequestBody结果。
+     * 
+     * @param request Dify 工作流执行请求
+     */
     private Map<String, Object> buildRequestBody(ReimbursementDifyRunRequest request) {
         Map<String, Object> inputs = new LinkedHashMap<>();
         inputs.put("tenant_id", request.tenantId());

@@ -10,15 +10,13 @@ import java.time.Duration;
 
 /**
  * 报销邮箱短期访问授权 Redis DAO
- *
+ * 
  * @author Codex
  */
 @Repository
 @RequiredArgsConstructor
 public class ReimbursementMailAccessGrantRedisDAO {
-
     private static final String KEY_PREFIX = "reimbursement:mail-access:";
-
     private final StringRedisTemplate stringRedisTemplate;
 
     public void set(String rawToken, ReimbursementMailAccessGrant grant, Duration ttl) {
@@ -34,6 +32,11 @@ public class ReimbursementMailAccessGrantRedisDAO {
         stringRedisTemplate.delete(buildKey(rawToken));
     }
 
+    /**
+     * 构建Key结果。
+     * 
+     * @param rawToken 原始访问令牌
+     */
     private String buildKey(String rawToken) {
         return KEY_PREFIX + SecureUtil.sha256(rawToken);
     }

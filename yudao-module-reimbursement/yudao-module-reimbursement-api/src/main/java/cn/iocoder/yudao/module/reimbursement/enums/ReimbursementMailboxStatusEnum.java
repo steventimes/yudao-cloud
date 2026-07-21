@@ -3,6 +3,10 @@ package cn.iocoder.yudao.module.reimbursement.enums;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * ReimbursementMailboxStatusEnum，枚举定义。
+ */
+
 @Getter
 @AllArgsConstructor
 public enum ReimbursementMailboxStatusEnum {

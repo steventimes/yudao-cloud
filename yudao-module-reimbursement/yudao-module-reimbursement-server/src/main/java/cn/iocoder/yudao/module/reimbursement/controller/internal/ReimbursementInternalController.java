@@ -27,7 +27,7 @@ import static cn.iocoder.yudao.module.reimbursement.enums.ErrorCodeConstants.*;
 
 /**
  * 报销内部 RPC Controller
- *
+ * 
  * @author Codex
  */
 @RestController
@@ -43,6 +43,14 @@ public class ReimbursementInternalController {
     private final ReimbursementMailboxService mailboxService;
     private final ReimbursementAiService aiService;
 
+    /**
+     * 解析邮箱访问授权。
+     * 
+     * @param authorizationHeader 内部服务认证请求头
+     * @param reqVO               请求参数对象
+     * @return 处理结果
+     */
+
     @PostMapping("/mail-access/resolve")
     public CommonResult<ReimbursementMailAccessResolveRespVO> resolveMailboxAccess(
             @RequestHeader("Authorization") String authorizationHeader,
@@ -52,6 +60,19 @@ public class ReimbursementInternalController {
                 reqVO.getMailAccessToken(), reqVO.getOperation());
         return success(TenantUtils.execute(grant.getTenantId(), () -> buildMailboxAccessRespVO(grant)));
     }
+
+    /**
+     * 上传报销附件。
+     * 
+     * @param authorizationHeader 内部服务认证请求头
+     * @param tenantId            租户编号
+     * @param reimbursementId     报销单编号
+     * @param externalArtifactId  外部附件产物编号
+     * @param sha256              文件 SHA-256 摘要
+     * @param documentType        单据类型
+     * @param file                上传的附件文件
+     * @return 处理结果
+     */
 
     @PostMapping("/ai-artifact/upload")
     public CommonResult<ReimbursementAiArtifactUploadRespVO> uploadAiArtifact(
@@ -67,6 +88,14 @@ public class ReimbursementInternalController {
                 tenantId, reimbursementId, externalArtifactId, sha256, documentType, file)));
     }
 
+    /**
+     * 应用 AI 识别结果。
+     * 
+     * @param authorizationHeader 内部服务认证请求头
+     * @param reqVO               请求参数对象
+     * @return 处理结果
+     */
+
     @PostMapping("/ai-fill")
     public CommonResult<ReimbursementAiFillRespVO> applyAiFill(
             @RequestHeader("Authorization") String authorizationHeader,
@@ -76,6 +105,11 @@ public class ReimbursementInternalController {
                 TenantUtils.execute(reqVO.getTenantId(), () -> aiService.applyAiFill(reqVO.getTenantId(), reqVO)));
     }
 
+    /**
+     * 构建MailboxAccessRespVO结果。
+     * 
+     * @param grant 邮箱访问授权记录
+     */
     private ReimbursementMailAccessResolveRespVO buildMailboxAccessRespVO(ReimbursementMailAccessGrant grant) {
         ReimbursementMailboxService.ResolvedMailboxCredential credential = mailboxService
                 .resolveCredentialForInternalUse(

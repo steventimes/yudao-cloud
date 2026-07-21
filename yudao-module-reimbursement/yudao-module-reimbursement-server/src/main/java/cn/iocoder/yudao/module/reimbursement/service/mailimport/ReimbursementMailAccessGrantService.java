@@ -19,7 +19,7 @@ import static cn.iocoder.yudao.module.reimbursement.enums.ErrorCodeConstants.REI
 
 /**
  * 报销邮箱短期访问授权 Service
- *
+ * 
  * @author Codex
  */
 @Service
@@ -31,6 +31,15 @@ public class ReimbursementMailAccessGrantService {
     private final SecureRandom secureRandom = new SecureRandom();
     private final ReimbursementMailAccessGrantRedisDAO grantRedisDAO;
     private final ReimbursementProperties reimbursementProperties;
+
+    /**
+     * 执行 issue 业务操作。
+     * 
+     * @param tenantId            租户编号
+     * @param userId              用户编号
+     * @param mailboxConnectionId 邮箱连接编号
+     * @return 处理结果
+     */
 
     public String issue(Long tenantId, Long userId, Long mailboxConnectionId) {
         String rawToken = generateRawToken();
@@ -60,6 +69,7 @@ public class ReimbursementMailAccessGrantService {
         return grant;
     }
 
+    /** 生成用于邮箱访问授权的随机令牌。 */
     private String generateRawToken() {
         byte[] tokenBytes = new byte[32];
         secureRandom.nextBytes(tokenBytes);

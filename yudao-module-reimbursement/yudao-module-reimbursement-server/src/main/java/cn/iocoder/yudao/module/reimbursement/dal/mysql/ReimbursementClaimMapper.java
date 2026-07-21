@@ -8,8 +8,20 @@ import java.util.*;
 import cn.iocoder.yudao.module.reimbursement.dal.dataobject.ReimbursementClaimDO;
 import cn.iocoder.yudao.module.reimbursement.controller.admin.vo.claim.ReimbursementClaimPageReqVO;
 
+/**
+ * ReimbursementClaimMapper，数据库访问 Mapper。
+ */
+
 @Mapper
 public interface ReimbursementClaimMapper extends BaseMapperX<ReimbursementClaimDO> {
+    /**
+     * 查询数据。
+     * 
+     * @param userId   用户编号
+     * @param queryAll 是否查询全部数据
+     * @param reqVO    请求参数对象
+     * @return 处理结果
+     */
     default PageResult<ReimbursementClaimDO> selectPage(Long userId, boolean queryAll,
             ReimbursementClaimPageReqVO reqVO) {
         LambdaQueryWrapperX<ReimbursementClaimDO> q = new LambdaQueryWrapperX<ReimbursementClaimDO>();

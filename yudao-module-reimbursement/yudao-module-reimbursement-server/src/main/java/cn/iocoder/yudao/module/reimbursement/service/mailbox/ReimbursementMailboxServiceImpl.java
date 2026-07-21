@@ -19,7 +19,7 @@ import static cn.iocoder.yudao.module.reimbursement.enums.ErrorCodeConstants.*;
 
 /**
  * 报销邮箱绑定 Service 实现类
- *
+ * 
  * @author Codex
  */
 @Service
@@ -31,6 +31,13 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
     private final ReimbursementMailboxVerifier mailboxVerifier;
     private final ReimbursementProperties reimbursementProperties;
 
+    /**
+     * 创建报销数据。
+     * 
+     * @param userId      用户编号
+     * @param createReqVO 创建请求参数
+     * @return 处理结果
+     */
     @Override
     @Transactional
     public Long createMailbox(Long userId, ReimbursementMailboxCreateReqVO createReqVO) {
@@ -45,6 +52,13 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
         return mailboxConnection.getId();
     }
 
+    /**
+     * 更新报销数据。
+     * 
+     * @param userId      用户编号
+     * @param updateReqVO 更新请求参数
+     * @return 处理结果
+     */
     @Override
     @Transactional
     public void updateMailbox(Long userId, ReimbursementMailboxUpdateReqVO updateReqVO) {
@@ -59,6 +73,13 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
         mailboxConnectionMapper.updateById(mailboxConnection);
     }
 
+    /**
+     * 验证邮箱配置。
+     * 
+     * @param userId 用户编号
+     * @param id     记录编号
+     * @return 处理结果
+     */
     @Override
     @Transactional
     public ReimbursementMailboxVerifyRespVO verifyMailbox(Long userId, Long id) {
@@ -79,10 +100,26 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
         return verifyRespVO;
     }
 
+    /**
+     * 查询单条报销数据。
+     * 
+     * @param userId 用户编号
+     * @param id     记录编号
+     * @return 处理结果
+     */
+
     @Override
     public ReimbursementMailboxRespVO getMailbox(Long userId, Long id) {
         return buildMailboxRespVO(requireOwnedMailbox(userId, id));
     }
+
+    /**
+     * 查询单条报销数据。
+     * 
+     * @param userId    用户编号
+     * @param pageReqVO 分页查询参数
+     * @return 处理结果
+     */
 
     @Override
     public PageResult<ReimbursementMailboxRespVO> getMailboxPage(Long userId,
@@ -91,11 +128,27 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
         return new PageResult<>(page.getList().stream().map(this::buildMailboxRespVO).toList(), page.getTotal());
     }
 
+    /**
+     * 删除报销数据。
+     * 
+     * @param userId 用户编号
+     * @param id     记录编号
+     * @return 处理结果
+     */
+
     @Override
     public void deleteMailbox(Long userId, Long id) {
         requireOwnedMailbox(userId, id);
         mailboxConnectionMapper.deleteById(id);
     }
+
+    /**
+     * 校验并获取数据。
+     * 
+     * @param userId 用户编号
+     * @param id     记录编号
+     * @return 处理结果
+     */
 
     @Override
     public ReimbursementMailboxConnectionDO requireVerifiedOwnedMailbox(Long userId, Long id) {
@@ -105,6 +158,13 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
         }
         return mailboxConnection;
     }
+
+    /**
+     * 解析邮箱访问授权。
+     * 
+     * @param connectionId 邮箱连接编号
+     * @return 处理结果
+     */
 
     @Override
     public ResolvedMailboxCredential resolveCredentialForInternalUse(Long connectionId) {
@@ -138,6 +198,12 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
         mailboxConnection.setUsername(username);
     }
 
+    /**
+     * 获取并校验OwnedMailbox数据。
+     * 
+     * @param userId 用户编号
+     * @param id     记录编号
+     */
     private ReimbursementMailboxConnectionDO requireOwnedMailbox(Long userId, Long id) {
         ReimbursementMailboxConnectionDO mailboxConnection = mailboxConnectionMapper.selectOwnedById(id, userId);
         if (mailboxConnection == null) {
@@ -146,6 +212,11 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
         return mailboxConnection;
     }
 
+    /**
+     * 构建MailboxRespVO结果。
+     * 
+     * @param mailboxConnection 方法调用所需的mailboxConnection数据
+     */
     private ReimbursementMailboxRespVO buildMailboxRespVO(ReimbursementMailboxConnectionDO mailboxConnection) {
         ReimbursementMailboxRespVO respVO = new ReimbursementMailboxRespVO();
         respVO.setId(mailboxConnection.getId());

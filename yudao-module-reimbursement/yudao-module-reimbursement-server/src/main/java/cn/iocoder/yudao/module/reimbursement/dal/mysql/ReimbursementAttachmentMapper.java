@@ -7,8 +7,18 @@ import org.apache.ibatis.annotations.Mapper;
 import java.util.*;
 import cn.iocoder.yudao.module.reimbursement.dal.dataobject.ReimbursementAttachmentDO;
 
+/**
+ * ReimbursementAttachmentMapper，数据库访问 Mapper。
+ */
+
 @Mapper
 public interface ReimbursementAttachmentMapper extends BaseMapperX<ReimbursementAttachmentDO> {
+    /**
+     * 查询数据。
+     * 
+     * @param reimbursementId 报销单编号
+     * @return 处理结果
+     */
     default List<ReimbursementAttachmentDO> selectListByReimbursementId(Long reimbursementId) {
         return selectList(ReimbursementAttachmentDO::getReimbursementId, reimbursementId);
     }
