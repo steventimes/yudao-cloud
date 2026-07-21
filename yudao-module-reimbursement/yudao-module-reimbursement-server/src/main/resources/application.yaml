@@ -1,0 +1,39 @@
+spring:
+  application:
+    name: reimbursement-server
+  profiles:
+    active: local
+  main:
+    allow-circular-references: true
+    allow-bean-definition-overriding: true
+  config:
+    import:
+      - optional:classpath:application-${spring.profiles.active}.yaml
+      - optional:nacos:${spring.application.name}-${spring.profiles.active}.yaml
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 12MB
+server:
+  port: 48090
+yudao:
+  info:
+    version: 1.0.0
+    base-package: cn.iocoder.yudao.module.reimbursement
+  tenant:
+    enable: true
+    ignore-urls:
+  reimbursement:
+    ai:
+      submit-mode: ${YUDAO_REIMBURSEMENT_AI_SUBMIT_MODE:DRAFT_ONLY}
+    dify:
+      enabled: ${YUDAO_REIMBURSEMENT_DIFY_ENABLED:false}
+      api-base-url: ${DIFY_API_BASE_URL:}
+      api-key: ${DIFY_REIMBURSEMENT_WORKFLOW_API_KEY:}
+      timeout-millis: ${DIFY_REIMBURSEMENT_TIMEOUT_MILLIS:300000}
+    mailbox:
+      allow-custom-provider: ${YUDAO_REIMBURSEMENT_ALLOW_CUSTOM_MAILBOX:false}
+      encryption-key: ${YUDAO_REIMBURSEMENT_MAILBOX_ENCRYPTION_KEY:}
+      access-token-ttl-minutes: ${YUDAO_REIMBURSEMENT_MAIL_ACCESS_TTL_MINUTES:15}
+    internal:
+      service-token: ${YUDAO_REIMBURSEMENT_INTERNAL_SERVICE_TOKEN:}

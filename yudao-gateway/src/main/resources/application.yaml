@@ -86,6 +86,15 @@ spring:
                 - Path=/admin-api/bpm/**
               filters:
                   - RewritePath=/admin-api/bpm/v3/api-docs, /v3/api-docs
+            ## reimbursement-server 服务
+            - id: reimbursement-admin-api
+              uri: grayLb://reimbursement-server
+              predicates:
+                - Path=/admin-api/reimbursement/**
+            - id: reimbursement-rpc-api
+              uri: grayLb://reimbursement-server
+              predicates:
+                - Path=/rpc-api/reimbursement/**
             ## report-server 服务
             - id: report-admin-api # 路由的编号
               uri: grayLb://report-server

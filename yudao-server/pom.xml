@@ -51,6 +51,13 @@
             <artifactId>yudao-module-bpm-server</artifactId>
             <version>${revision}</version>
         </dependency>
+
+        <!-- 智能报销模块 -->
+        <dependency>
+            <groupId>cn.iocoder.cloud</groupId>
+            <artifactId>yudao-module-reimbursement-server</artifactId>
+            <version>${revision}</version>
+        </dependency>
         <!-- 支付服务。默认注释，保证编译速度 -->
         <dependency>
             <groupId>cn.iocoder.cloud</groupId>
