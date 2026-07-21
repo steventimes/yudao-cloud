@@ -1,8 +1,11 @@
 package cn.iocoder.yudao.module.reimbursement.enums;
 
 /**
- * ReimbursementSourceEnum，枚举定义。
+ * 报销单的数据来源。
  */
 public enum ReimbursementSourceEnum {
-    MANUAL, AI_EMAIL
+    /** 用户手工创建。 */
+    MANUAL,
+    /** 由 AI 邮件导入流程创建。 */
+    AI_EMAIL
 }

@@ -1,8 +1,17 @@
 package cn.iocoder.yudao.module.reimbursement.enums;
 
 /**
- * ReimbursementExpenseTypeEnum，枚举定义。
+ * 报销明细的费用类型。
  */
 public enum ReimbursementExpenseTypeEnum {
-    TRANSPORT, MEAL, LODGING, OFFICE, OTHER
+    /** 交通费。 */
+    TRANSPORT,
+    /** 餐饮费。 */
+    MEAL,
+    /** 住宿费。 */
+    LODGING,
+    /** 办公费。 */
+    OFFICE,
+    /** 其他费用。 */
+    OTHER
 }
