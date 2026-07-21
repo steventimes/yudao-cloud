@@ -3,6 +3,8 @@ package cn.iocoder.yudao.module.reimbursement.service.mailbox;
 import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.iocoder.yudao.framework.common.util.collection.CollectionUtils;
+import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.framework.tenant.core.context.TenantContextHolder;
 import cn.iocoder.yudao.module.reimbursement.config.ReimbursementProperties;
 import cn.iocoder.yudao.module.reimbursement.controller.admin.vo.mailbox.*;
@@ -16,7 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Set;
 
 import static cn.iocoder.yudao.module.reimbursement.enums.ErrorCodeConstants.*;
 
@@ -128,7 +129,7 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
     public PageResult<ReimbursementMailboxRespVO> getMailboxPage(Long userId,
             ReimbursementMailboxPageReqVO pageReqVO) {
         PageResult<ReimbursementMailboxConnectionDO> page = mailboxConnectionMapper.selectPage(userId, pageReqVO);
-        return new PageResult<>(page.getList().stream().map(this::buildMailboxRespVO).toList(), page.getTotal());
+        return new PageResult<>(CollectionUtils.convertList(page.getList(), this::buildMailboxRespVO), page.getTotal());
     }
 
     /**
@@ -211,11 +212,11 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
         if (StrUtil.isBlank(imapHost) || imapHost.chars().anyMatch(Character::isWhitespace)
                 || imapHost.startsWith("http://") || imapHost.startsWith("https://")
                 || imapHost.contains("/") || imapPort == null || imapPort < 1 || imapPort > 65535
-                || StrUtil.isBlank(username) || !Set.of("strict", "insecure-dev").contains(tlsVerification)) {
+                || StrUtil.isBlank(username) || !CollectionUtils.containsAny(tlsVerification, "strict", "insecure-dev")) {
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_MAILBOX_CONFIG_INVALID);
         }
         if ("insecure-dev".equals(tlsVerification)
-                && !Set.of("greenmail", "localhost", "127.0.0.1", "::1").contains(imapHost)) {
+                && !CollectionUtils.containsAny(imapHost, "greenmail", "localhost", "127.0.0.1", "::1")) {
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_MAILBOX_CONFIG_INVALID);
         }
         mailboxConnection.setImapHost(imapHost);
@@ -244,18 +245,7 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
      * @param mailboxConnection 方法调用所需的mailboxConnection数据
      */
     private ReimbursementMailboxRespVO buildMailboxRespVO(ReimbursementMailboxConnectionDO mailboxConnection) {
-        ReimbursementMailboxRespVO respVO = new ReimbursementMailboxRespVO();
-        respVO.setId(mailboxConnection.getId());
-        respVO.setProviderCode(mailboxConnection.getProviderCode());
-        respVO.setEmailNormalized(mailboxConnection.getEmailNormalized());
-        respVO.setUsername(mailboxConnection.getUsername());
-        respVO.setImapHost(mailboxConnection.getImapHost());
-        respVO.setImapPort(mailboxConnection.getImapPort());
-        respVO.setTlsVerification(mailboxConnection.getTlsVerification());
-        respVO.setStatus(mailboxConnection.getStatus());
-        respVO.setVerifiedAt(mailboxConnection.getVerifiedAt());
-        respVO.setLastFailureMessage(mailboxConnection.getLastFailureMessage());
-        return respVO;
+        return BeanUtils.toBean(mailboxConnection, ReimbursementMailboxRespVO.class);
     }
 
 }

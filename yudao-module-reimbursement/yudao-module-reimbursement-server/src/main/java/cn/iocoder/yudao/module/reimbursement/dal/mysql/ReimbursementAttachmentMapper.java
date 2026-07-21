@@ -4,6 +4,8 @@ import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Update;
 import java.util.*;
 import cn.iocoder.yudao.module.reimbursement.dal.dataobject.ReimbursementAttachmentDO;
 
@@ -26,7 +28,7 @@ public interface ReimbursementAttachmentMapper extends BaseMapperX<Reimbursement
     /**
      * 按报销单和外部附件编号查询附件，确保附件属于当前报销单。
      *
-     * @param reimbursementId  报销单编号
+     * @param reimbursementId    报销单编号
      * @param externalArtifactId 外部附件存储编号
      * @return 匹配的附件，不存在时返回 {@code null}
      */
@@ -51,17 +53,20 @@ public interface ReimbursementAttachmentMapper extends BaseMapperX<Reimbursement
      *
      * @param reimbursementId 报销单编号
      */
-    default void clearItemIdByReimbursementId(Long reimbursementId) {
-        ReimbursementAttachmentDO attachment = new ReimbursementAttachmentDO();
-        attachment.setItemId(null);
-        update(attachment, new LambdaQueryWrapperX<ReimbursementAttachmentDO>()
-                .eq(ReimbursementAttachmentDO::getReimbursementId, reimbursementId));
-    }
+    @Update("""
+            UPDATE reimbursement_attachment
+            SET item_id = NULL
+            WHERE reimbursement_id = #{reimbursementId}
+              AND tenant_id = #{tenantId}
+              AND deleted = b'0'
+            """)
+    int clearItemIdByReimbursementId(@Param("reimbursementId") Long reimbursementId,
+            @Param("tenantId") Long tenantId);
 
     /**
      * 更新指定附件所属的报销明细。
      *
-     * @param reimbursementId   报销单编号
+     * @param reimbursementId    报销单编号
      * @param externalArtifactId 外部附件存储编号
      * @param itemId             报销明细编号，可为 {@code null} 表示解除关联
      */

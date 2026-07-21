@@ -1,6 +1,7 @@
 package cn.iocoder.yudao.module.reimbursement.service.mailimport;
 
 import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
+import cn.iocoder.yudao.framework.common.util.date.LocalDateTimeUtils;
 import cn.iocoder.yudao.module.reimbursement.config.ReimbursementProperties;
 import cn.iocoder.yudao.module.reimbursement.dal.redis.ReimbursementMailAccessGrant;
 import cn.iocoder.yudao.module.reimbursement.dal.redis.ReimbursementMailAccessGrantRedisDAO;
@@ -60,7 +61,7 @@ public class ReimbursementMailAccessGrantService {
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_MAIL_ACCESS_OPERATION_DENIED);
         }
         ReimbursementMailAccessGrant grant = grantRedisDAO.get(rawToken);
-        if (grant == null || grant.getExpiresAt() == null || grant.getExpiresAt().isBefore(LocalDateTime.now())) {
+        if (grant == null || grant.getExpiresAt() == null || LocalDateTimeUtils.beforeNow(grant.getExpiresAt())) {
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_MAIL_ACCESS_TOKEN_INVALID);
         }
         if (grant.getAllowedOperations() == null || !grant.getAllowedOperations().contains(operation)) {

@@ -3,6 +3,8 @@ package cn.iocoder.yudao.module.reimbursement.service.claim;
 import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import cn.iocoder.yudao.framework.common.util.collection.CollectionUtils;
+import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.bpm.api.task.BpmProcessInstanceApi;
 import cn.iocoder.yudao.module.bpm.api.task.dto.BpmProcessInstanceCreateReqDTO;
 import cn.iocoder.yudao.module.reimbursement.controller.admin.vo.claim.*;
@@ -16,6 +18,7 @@ import cn.iocoder.yudao.module.reimbursement.enums.ReimbursementExpenseTypeEnum;
 import cn.iocoder.yudao.module.reimbursement.enums.ReimbursementSourceEnum;
 import cn.iocoder.yudao.module.reimbursement.enums.ReimbursementStatusEnum;
 import cn.iocoder.yudao.framework.security.core.service.SecurityFrameworkService;
+import cn.iocoder.yudao.framework.tenant.core.context.TenantContextHolder;
 import cn.iocoder.yudao.module.infra.api.file.FileApi;
 import cn.iocoder.yudao.module.system.api.user.AdminUserApi;
 import cn.iocoder.yudao.module.system.api.user.dto.AdminUserRespDTO;
@@ -86,7 +89,7 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
     @Transactional
     public void updateClaim(Long userId, ReimbursementClaimUpdateReqVO updateReqVO) {
         ReimbursementClaimDO claim = requireOwnedClaim(userId, updateReqVO.getId());
-        if (!Set.of(0, 20, 30).contains(claim.getStatus())) {
+        if (!CollectionUtils.containsAny(claim.getStatus(), 0, 20, 30)) {
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_CLAIM_STATUS_INVALID);
         }
         validateCurrency(updateReqVO.getCurrency());
@@ -98,8 +101,9 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         claim.setStatus(ReimbursementStatusEnum.DRAFT.getStatus());
         claimMapper.updateById(claim);
 
-        attachmentMapper.clearItemIdByReimbursementId(claim.getId());
-        itemMapper.deleteByReimbursementId(claim.getId());
+        Long tenantId = TenantContextHolder.getRequiredTenantId();
+        attachmentMapper.clearItemIdByReimbursementId(claim.getId(), tenantId);
+        itemMapper.deletePermanentlyByReimbursementId(claim.getId(), tenantId);
         saveItems(claim.getId(), updateReqVO.getItems(), true);
     }
 
@@ -431,16 +435,8 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
      */
     private void saveItems(Long reimbursementId, List<ReimbursementItemReqVO> itemReqVOList, boolean manuallyModified) {
         for (ReimbursementItemReqVO itemReqVO : itemReqVOList) {
-            ReimbursementItemDO item = new ReimbursementItemDO();
+            ReimbursementItemDO item = BeanUtils.toBean(itemReqVO, ReimbursementItemDO.class);
             item.setReimbursementId(reimbursementId);
-            item.setClientItemId(itemReqVO.getClientItemId());
-            item.setExpenseDate(itemReqVO.getExpenseDate());
-            item.setExpenseType(itemReqVO.getExpenseType());
-            item.setMerchantName(itemReqVO.getMerchantName());
-            item.setAmount(itemReqVO.getAmount());
-            item.setTaxAmount(itemReqVO.getTaxAmount());
-            item.setInvoiceNumber(itemReqVO.getInvoiceNumber());
-            item.setRemark(itemReqVO.getRemark());
             item.setManuallyModified(manuallyModified);
             itemMapper.insert(item);
         }
@@ -452,23 +448,7 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
      * @param claim 报销单数据
      */
     private ReimbursementClaimRespVO buildClaimRespVO(ReimbursementClaimDO claim) {
-        ReimbursementClaimRespVO claimRespVO = new ReimbursementClaimRespVO();
-        claimRespVO.setId(claim.getId());
-        claimRespVO.setReimbursementNo(claim.getReimbursementNo());
-        claimRespVO.setUserId(claim.getUserId());
-        claimRespVO.setDeptId(claim.getDeptId());
-        claimRespVO.setApplicantNameSnapshot(claim.getApplicantNameSnapshot());
-        claimRespVO.setReason(claim.getReason());
-        claimRespVO.setTotalAmount(claim.getTotalAmount());
-        claimRespVO.setCurrency(claim.getCurrency());
-        claimRespVO.setStatus(claim.getStatus());
-        claimRespVO.setProcessInstanceId(claim.getProcessInstanceId());
-        claimRespVO.setSource(claim.getSource());
-        claimRespVO.setMailboxConnectionId(claim.getMailboxConnectionId());
-        claimRespVO.setAiConfidence(claim.getAiConfidence());
-        claimRespVO.setAiFailureMessage(claim.getAiFailureMessage());
-        claimRespVO.setSubmitTime(claim.getSubmitTime());
-        claimRespVO.setCreateTime(claim.getCreateTime());
+        ReimbursementClaimRespVO claimRespVO = BeanUtils.toBean(claim, ReimbursementClaimRespVO.class);
         claimRespVO.setItems(itemMapper.selectListByReimbursementId(claim.getId()).stream()
                 .map(this::buildItemRespVO).collect(Collectors.toList()));
         claimRespVO.setAttachments(attachmentMapper.selectListByReimbursementId(claim.getId()).stream()
@@ -482,19 +462,7 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
      * @param item 报销明细数据
      */
     private ReimbursementItemRespVO buildItemRespVO(ReimbursementItemDO item) {
-        ReimbursementItemRespVO itemRespVO = new ReimbursementItemRespVO();
-        itemRespVO.setId(item.getId());
-        itemRespVO.setClientItemId(item.getClientItemId());
-        itemRespVO.setExpenseDate(item.getExpenseDate());
-        itemRespVO.setExpenseType(item.getExpenseType());
-        itemRespVO.setMerchantName(item.getMerchantName());
-        itemRespVO.setAmount(item.getAmount());
-        itemRespVO.setTaxAmount(item.getTaxAmount());
-        itemRespVO.setInvoiceNumber(item.getInvoiceNumber());
-        itemRespVO.setRemark(item.getRemark());
-        itemRespVO.setAiConfidence(item.getAiConfidence());
-        itemRespVO.setManuallyModified(item.getManuallyModified());
-        return itemRespVO;
+        return BeanUtils.toBean(item, ReimbursementItemRespVO.class);
     }
 
     /**
@@ -503,16 +471,7 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
      * @param attachment 附件数据
      */
     private ReimbursementAttachmentRespVO buildAttachmentRespVO(ReimbursementAttachmentDO attachment) {
-        ReimbursementAttachmentRespVO attachmentRespVO = new ReimbursementAttachmentRespVO();
-        attachmentRespVO.setId(attachment.getId());
-        attachmentRespVO.setItemId(attachment.getItemId());
-        attachmentRespVO.setExternalArtifactId(attachment.getExternalArtifactId());
-        attachmentRespVO.setFileName(attachment.getFileName());
-        attachmentRespVO.setMimeType(attachment.getMimeType());
-        attachmentRespVO.setSize(attachment.getSize());
-        attachmentRespVO.setSha256(attachment.getSha256());
-        attachmentRespVO.setDocumentType(attachment.getDocumentType());
-        return attachmentRespVO;
+        return BeanUtils.toBean(attachment, ReimbursementAttachmentRespVO.class);
     }
 
 }

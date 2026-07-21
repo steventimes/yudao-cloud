@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS `reimbursement_item` (
   `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除',
   `tenant_id` bigint NOT NULL DEFAULT 0 COMMENT '租户编号',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE KEY `uk_reimbursement_item_client` (`reimbursement_id`, `client_item_id`) USING BTREE,
+  UNIQUE KEY `uk_reimbursement_item_client` (`tenant_id`, `reimbursement_id`, `client_item_id`) USING BTREE,
   KEY `idx_reimbursement_item_claim` (`tenant_id`, `reimbursement_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='报销明细';
 

@@ -2,6 +2,8 @@ package cn.iocoder.yudao.module.reimbursement.service.ai;
 
 import cn.hutool.core.util.StrUtil;
 import cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionUtil;
+import cn.iocoder.yudao.framework.common.util.collection.CollectionUtils;
+import cn.iocoder.yudao.framework.common.util.object.BeanUtils;
 import cn.iocoder.yudao.module.infra.api.file.FileApi;
 import cn.iocoder.yudao.module.reimbursement.config.ReimbursementProperties;
 import cn.iocoder.yudao.module.reimbursement.controller.admin.vo.claim.ReimbursementClaimSubmitRespVO;
@@ -69,7 +71,7 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
             String documentType, MultipartFile file) {
         validateArtifactRequest(externalArtifactId, sha256, documentType, file);
         ReimbursementClaimDO claim = requireAiEmailClaim(reimbursementId);
-        if (!Set.of(10, 20, 30).contains(claim.getStatus())) {
+        if (!CollectionUtils.containsAny(claim.getStatus(), 10, 20, 30)) {
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_CLAIM_STATUS_INVALID);
         }
         byte[] content = readFileBytes(file);
@@ -125,11 +127,11 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
         // 1. 重新读取并校验当前 Claim，再在独立事务中保存 AI 明细和附件关联。
         ReimbursementClaimDO claim = transactionTemplate.execute(status -> {
             ReimbursementClaimDO current = requireAiEmailClaim(reqVO.getReimbursementId());
-            if (!Set.of(10, 30).contains(current.getStatus())) {
+            if (!CollectionUtils.containsAny(current.getStatus(), 10, 30)) {
                 throw ServiceExceptionUtil.exception(REIMBURSEMENT_CLAIM_STATUS_INVALID);
             }
-            attachmentMapper.clearItemIdByReimbursementId(current.getId());
-            itemMapper.deleteByReimbursementId(current.getId());
+            attachmentMapper.clearItemIdByReimbursementId(current.getId(), tenantId);
+            itemMapper.deletePermanentlyByReimbursementId(current.getId(), tenantId);
             BigDecimal totalAmount = BigDecimal.ZERO;
             for (ReimbursementAiFillReqVO.Item itemReqVO : reqVO.getItems()) {
                 ReimbursementItemDO item = insertAiItem(current.getId(), itemReqVO);
@@ -250,17 +252,9 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
      * @param itemReqVO       报销明细请求对象
      */
     private ReimbursementItemDO insertAiItem(Long reimbursementId, ReimbursementAiFillReqVO.Item itemReqVO) {
-        ReimbursementItemDO item = new ReimbursementItemDO();
+        ReimbursementItemDO item = BeanUtils.toBean(itemReqVO, ReimbursementItemDO.class);
         item.setReimbursementId(reimbursementId);
         item.setClientItemId(StrUtil.blankToDefault(itemReqVO.getClientItemId(), UUID.randomUUID().toString()));
-        item.setExpenseDate(itemReqVO.getExpenseDate());
-        item.setExpenseType(itemReqVO.getExpenseType());
-        item.setMerchantName(itemReqVO.getMerchantName());
-        item.setAmount(itemReqVO.getAmount());
-        item.setTaxAmount(itemReqVO.getTaxAmount());
-        item.setInvoiceNumber(itemReqVO.getInvoiceNumber());
-        item.setRemark(itemReqVO.getRemark());
-        item.setAiConfidence(itemReqVO.getAiConfidence());
         item.setManuallyModified(false);
         itemMapper.insert(item);
         return item;
@@ -317,14 +311,7 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
      * @param attachment 附件数据
      */
     private ReimbursementAiArtifactUploadRespVO buildArtifactUploadRespVO(ReimbursementAttachmentDO attachment) {
-        ReimbursementAiArtifactUploadRespVO respVO = new ReimbursementAiArtifactUploadRespVO();
-        respVO.setExternalArtifactId(attachment.getExternalArtifactId());
-        respVO.setFileUrl(attachment.getFileUrl());
-        respVO.setFileName(attachment.getFileName());
-        respVO.setMimeType(attachment.getMimeType());
-        respVO.setSize(attachment.getSize());
-        respVO.setSha256(attachment.getSha256());
-        return respVO;
+        return BeanUtils.toBean(attachment, ReimbursementAiArtifactUploadRespVO.class);
     }
 
     private ReimbursementAiFillRespVO buildAiFillRespVO(ReimbursementClaimDO claim, boolean autoSubmitAttempted,

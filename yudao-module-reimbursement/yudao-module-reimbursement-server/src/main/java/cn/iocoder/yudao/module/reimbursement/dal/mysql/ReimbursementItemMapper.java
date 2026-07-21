@@ -3,7 +3,9 @@ package cn.iocoder.yudao.module.reimbursement.dal.mysql;
 import cn.iocoder.yudao.framework.mybatis.core.mapper.BaseMapperX;
 import cn.iocoder.yudao.framework.mybatis.core.query.LambdaQueryWrapperX;
 import cn.iocoder.yudao.framework.common.pojo.PageResult;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import java.util.*;
 import cn.iocoder.yudao.module.reimbursement.dal.dataobject.ReimbursementItemDO;
 
@@ -28,8 +30,11 @@ public interface ReimbursementItemMapper extends BaseMapperX<ReimbursementItemDO
      *
      * @param reimbursementId 报销单编号
      */
-    default void deleteByReimbursementId(Long reimbursementId) {
-        delete(new LambdaQueryWrapperX<ReimbursementItemDO>().eq(ReimbursementItemDO::getReimbursementId,
-                reimbursementId));
-    }
+    @Delete("""
+            DELETE FROM reimbursement_item
+            WHERE reimbursement_id = #{reimbursementId}
+              AND tenant_id = #{tenantId}
+            """)
+    int deletePermanentlyByReimbursementId(@Param("reimbursementId") Long reimbursementId,
+            @Param("tenantId") Long tenantId);
 }
