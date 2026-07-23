@@ -10,14 +10,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class JakartaMailReimbursementMailboxVerifierTest {
 
     @RegisterExtension
-    static GreenMailExtension greenMail = new GreenMailExtension(ServerSetupTest.IMAPS);
+    static GreenMailExtension greenMail = new GreenMailExtension(ServerSetupTest.IMAPS.dynamicPort());
 
     @Test
     void verifyShouldAllowGreenMailWithInsecureDevTls() {
         greenMail.setUser("employee@example.com", "employee@example.com", "auth-code");
 
         new JakartaMailReimbursementMailboxVerifier().verify(
-                "localhost", ServerSetupTest.IMAPS.getPort(), "employee@example.com", "auth-code", "insecure-dev");
+                "localhost", greenMail.getImaps().getPort(), "employee@example.com", "auth-code", "insecure-dev");
     }
 
     @Test
@@ -34,7 +34,7 @@ class JakartaMailReimbursementMailboxVerifierTest {
         JakartaMailReimbursementMailboxVerifier verifier = new JakartaMailReimbursementMailboxVerifier();
 
         RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> verifier.verify("localhost", ServerSetupTest.IMAPS.getPort(),
+                () -> verifier.verify("localhost", greenMail.getImaps().getPort(),
                         "user-a@localhost", "wrong-password", "insecure-dev"));
         org.junit.jupiter.api.Assertions.assertFalse(
                 String.valueOf(exception.getMessage()).contains("wrong-password"));

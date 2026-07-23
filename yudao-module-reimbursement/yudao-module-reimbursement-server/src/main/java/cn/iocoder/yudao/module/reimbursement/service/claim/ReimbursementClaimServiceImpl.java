@@ -34,9 +34,7 @@ import java.util.stream.Collectors;
 import static cn.iocoder.yudao.module.reimbursement.enums.ErrorCodeConstants.*;
 
 /**
- * 报销申请 Service 实现类
- * 
- * @author Codex
+ * 报销单服务实现。
  */
 @Service
 @RequiredArgsConstructor
@@ -55,13 +53,6 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
 
     private static final String QUERY_ALL_PERMISSION = "reimbursement:claim:query-all";
 
-    /**
-     * 创建报销数据。
-     * 
-     * @param userId      用户编号
-     * @param createReqVO 创建请求参数
-     * @return 处理结果
-     */
     @Override
     @Transactional
     public Long createClaim(Long userId, ReimbursementClaimCreateReqVO createReqVO) {
@@ -78,13 +69,21 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         return claim.getId();
     }
 
-    /**
-     * 更新报销数据。
-     * 
-     * @param userId      用户编号
-     * @param updateReqVO 更新请求参数
-     * @return 处理结果
-     */
+    @Override
+    @Transactional
+    public void deleteClaim(Long userId, Long id) {
+        ReimbursementClaimDO claim = requireOwnedClaim(userId, id);
+        if (!CollectionUtils.containsAny(claim.getStatus(), ReimbursementStatusEnum.DRAFT.getStatus(),
+                ReimbursementStatusEnum.AI_FAILED.getStatus())) {
+            throw ServiceExceptionUtil.exception(REIMBURSEMENT_CLAIM_DELETE_STATUS_INVALID);
+        }
+        Long tenantId = TenantContextHolder.getRequiredTenantId();
+        attachmentMapper.clearItemIdByReimbursementId(id, tenantId);
+        attachmentMapper.deleteByReimbursementId(id, tenantId);
+        itemMapper.deletePermanentlyByReimbursementId(id, tenantId);
+        claimMapper.deleteById(id);
+    }
+
     @Override
     @Transactional
     public void updateClaim(Long userId, ReimbursementClaimUpdateReqVO updateReqVO) {
@@ -107,13 +106,6 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         saveItems(claim.getId(), updateReqVO.getItems(), true);
     }
 
-    /**
-     * 确认报销数据。
-     * 
-     * @param userId       用户编号
-     * @param confirmReqVO 确认请求参数
-     * @return 处理结果
-     */
     @Override
     @Transactional
     public void confirmClaim(Long userId, ReimbursementClaimConfirmReqVO confirmReqVO) {
@@ -122,21 +114,9 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_CLAIM_STATUS_INVALID);
         }
 
-        ReimbursementClaimUpdateReqVO updateReqVO = new ReimbursementClaimUpdateReqVO();
-        updateReqVO.setId(confirmReqVO.getId());
-        updateReqVO.setReason(confirmReqVO.getReason());
-        updateReqVO.setCurrency(confirmReqVO.getCurrency());
-        updateReqVO.setItems(confirmReqVO.getItems());
-        updateClaim(userId, updateReqVO);
+        updateClaim(userId, BeanUtils.toBean(confirmReqVO, ReimbursementClaimUpdateReqVO.class));
     }
 
-    /**
-     * 提交报销审批。
-     * 
-     * @param userId      用户编号
-     * @param submitReqVO 提交请求参数
-     * @return 处理结果
-     */
     @Override
     @Transactional
     public ReimbursementClaimSubmitRespVO submitClaim(Long userId, ReimbursementClaimSubmitReqVO submitReqVO) {
@@ -150,40 +130,18 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         return submitInternal(userId, claim, submitReqVO.getStartUserSelectAssignees());
     }
 
-    /**
-     * 查询单条报销数据。
-     * 
-     * @param userId 用户编号
-     * @param id     记录编号
-     * @return 处理结果
-     */
 
     @Override
     public ReimbursementClaimRespVO getClaim(Long userId, Long id) {
         return buildClaimRespVO(requireAccessibleClaim(userId, id));
     }
 
-    /**
-     * 查询单条报销数据。
-     * 
-     * @param userId    用户编号
-     * @param pageReqVO 分页查询参数
-     * @return 处理结果
-     */
 
     @Override
     public PageResult<ReimbursementClaimDO> getClaimPage(Long userId, ReimbursementClaimPageReqVO pageReqVO) {
         return claimMapper.selectPage(userId, hasQueryAllPermission(), pageReqVO);
     }
 
-    /**
-     * 查询单条报销数据。
-     * 
-     * @param userId          用户编号
-     * @param reimbursementId 报销单编号
-     * @param attachmentId    附件编号
-     * @return 处理结果
-     */
 
     @Override
     public String getAttachmentAccessUrl(Long userId, Long reimbursementId, Long attachmentId) {
@@ -192,16 +150,14 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         if (attachment == null || !Objects.equals(attachment.getReimbursementId(), reimbursementId)) {
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_AI_ATTACHMENT_INVALID);
         }
-        return fileApi.presignGetUrl(attachment.getFileUrl(), 300).getCheckedData();
+        try {
+            return fileApi.presignGetUrl(attachment.getFileUrl(), 300).getCheckedData();
+        } catch (UnsupportedOperationException ignored) {
+            // local、ftp、db 等文件客户端通过原始 URL 直接读取，不支持也不需要预签名。
+            return attachment.getFileUrl();
+        }
     }
 
-    /**
-     * 创建报销数据。
-     * 
-     * @param userId              用户编号
-     * @param mailboxConnectionId 邮箱连接编号
-     * @return 处理结果
-     */
     @Override
     @Transactional
     public Long createAiProcessingClaim(Long userId, Long mailboxConnectionId) {
@@ -223,14 +179,6 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         return claim.getId();
     }
 
-    /**
-     * 标记处理状态。
-     * 
-     * @param tenantId        租户编号
-     * @param reimbursementId 报销单编号
-     * @param failureMessage  AI 处理失败原因
-     * @return 处理结果
-     */
 
     @Override
     public void markAiFailedIfProcessing(Long tenantId, Long reimbursementId, String failureMessage) {
@@ -243,14 +191,6 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         claimMapper.updateById(claim);
     }
 
-    /**
-     * 自动提交报销审批。
-     * 
-     * @param tenantId        租户编号
-     * @param ownerUserId     邮箱绑定所属用户编号
-     * @param reimbursementId 报销单编号
-     * @return 处理结果
-     */
     @Override
     @Transactional
     public ReimbursementClaimSubmitRespVO autoSubmitClaim(Long tenantId, Long ownerUserId, Long reimbursementId) {
@@ -299,7 +239,7 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
     }
 
     /**
-     * 构建ProcessVariables结果。
+     * 构造 BPM 流程变量。
      * 
      * @param userId 用户编号
      * @param claim  报销单数据
@@ -317,20 +257,17 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
     }
 
     /**
-     * 构建SubmitRespVO结果。
+     * 构造审批提交响应。
      * 
      * @param claim 报销单数据
      */
     private ReimbursementClaimSubmitRespVO buildSubmitRespVO(ReimbursementClaimDO claim) {
-        ReimbursementClaimSubmitRespVO submitRespVO = new ReimbursementClaimSubmitRespVO();
-        submitRespVO.setReimbursementId(claim.getId());
-        submitRespVO.setStatus(claim.getStatus());
-        submitRespVO.setProcessInstanceId(claim.getProcessInstanceId());
-        return submitRespVO;
+        return BeanUtils.toBean(claim, ReimbursementClaimSubmitRespVO.class)
+                .setReimbursementId(claim.getId());
     }
 
     /**
-     * 获取并校验OwnedClaim数据。
+     * 查询当前用户拥有的报销单。
      * 
      * @param userId          用户编号
      * @param reimbursementId 报销单编号
@@ -344,7 +281,7 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
     }
 
     /**
-     * 获取并校验AccessibleClaim数据。
+     * 按 query-all 权限查询当前用户可访问的报销单。
      * 
      * @param userId          用户编号
      * @param reimbursementId 报销单编号
@@ -364,7 +301,7 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
     }
 
     /**
-     * 校验Currency参数。
+     * 校验币种；当前仅支持 CNY。
      * 
      * @param currency 币种
      */
@@ -375,7 +312,7 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
     }
 
     /**
-     * 校验Items参数。
+     * 校验报销明细非空且客户端明细编号唯一。
      * 
      * @param itemReqVOList 报销明细请求列表
      */
@@ -390,7 +327,7 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
     }
 
     /**
-     * 校验Item参数。
+     * 校验费用类型、金额、税额和客户端明细编号。
      * 
      * @param itemReqVO     报销明细请求对象
      * @param clientItemIds 已使用的明细客户端编号集合
@@ -416,7 +353,7 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
     }
 
     /**
-     * 计算TotalAmount结果。
+     * 汇总报销明细金额。
      * 
      * @param itemReqVOList 报销明细请求列表
      */
@@ -427,7 +364,7 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
     }
 
     /**
-     * 保存Items数据。
+     * 重建报销明细；人工保存时保留已有附件关联。
      * 
      * @param reimbursementId  报销单编号
      * @param itemReqVOList    报销明细请求列表
@@ -443,7 +380,7 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
     }
 
     /**
-     * 构建ClaimRespVO结果。
+     * 组装报销详情及其明细和附件。
      * 
      * @param claim 报销单数据
      */
@@ -457,7 +394,7 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
     }
 
     /**
-     * 构建ItemRespVO结果。
+     * 将报销明细转换为响应对象。
      * 
      * @param item 报销明细数据
      */
@@ -466,7 +403,7 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
     }
 
     /**
-     * 构建AttachmentRespVO结果。
+     * 将报销附件转换为响应对象。
      * 
      * @param attachment 附件数据
      */

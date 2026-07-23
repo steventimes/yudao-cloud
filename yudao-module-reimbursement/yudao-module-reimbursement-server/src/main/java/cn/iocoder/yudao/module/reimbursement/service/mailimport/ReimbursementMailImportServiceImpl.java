@@ -12,12 +12,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.stereotype.Service;
 
-import static cn.iocoder.yudao.module.reimbursement.enums.ErrorCodeConstants.REIMBURSEMENT_ITEM_INVALID;
+import static cn.iocoder.yudao.module.reimbursement.enums.ErrorCodeConstants.REIMBURSEMENT_MAIL_FILTER_INVALID;
 
 /**
- * 报销邮件导入 Service 实现类
- * 
- * @author Codex
+ * 邮件票据导入服务实现。
  */
 @Service
 @RequiredArgsConstructor
@@ -30,13 +28,6 @@ public class ReimbursementMailImportServiceImpl implements ReimbursementMailImpo
     private final ReimbursementMailAccessGrantService grantService;
     private final ReimbursementProperties reimbursementProperties;
 
-    /**
-     * 启动邮箱导入。
-     * 
-     * @param userId     用户编号
-     * @param startReqVO 邮件导入启动参数
-     * @return 处理结果
-     */
 
     @Override
     public ReimbursementMailImportStartRespVO start(Long userId, ReimbursementMailImportStartReqVO startReqVO) {
@@ -58,15 +49,20 @@ public class ReimbursementMailImportServiceImpl implements ReimbursementMailImpo
     }
 
     /**
-     * 校验DateRange参数。
+     * 校验回溯天数与显式日期范围不能同时使用。
      * 
      * @param startReqVO 邮件导入启动参数
      */
     private void validateDateRange(ReimbursementMailImportStartReqVO startReqVO) {
         boolean hasLookbackDays = startReqVO.getLookbackDays() != null;
         boolean hasDateRange = startReqVO.getFromDate() != null || startReqVO.getToDate() != null;
-        if (hasLookbackDays && hasDateRange) {
-            throw ServiceExceptionUtil.exception(REIMBURSEMENT_ITEM_INVALID);
+        boolean hasReversedDateRange = startReqVO.getFromDate() != null && startReqVO.getToDate() != null
+                && startReqVO.getFromDate().isAfter(startReqVO.getToDate());
+        if (hasLookbackDays && hasDateRange || hasReversedDateRange) {
+            throw ServiceExceptionUtil.exception(REIMBURSEMENT_MAIL_FILTER_INVALID);
+        }
+        if (!hasLookbackDays && !hasDateRange) {
+            startReqVO.setLookbackDays(30);
         }
     }
 

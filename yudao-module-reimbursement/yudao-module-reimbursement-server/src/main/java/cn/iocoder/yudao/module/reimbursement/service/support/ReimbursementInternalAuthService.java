@@ -9,7 +9,7 @@ import java.security.MessageDigest;
 import static cn.iocoder.yudao.module.reimbursement.enums.ErrorCodeConstants.REIMBURSEMENT_INTERNAL_TOKEN_INVALID;
 
 /**
- * ReimbursementInternalAuthService，业务服务。
+ * 报销内部接口 Bearer Token 校验服务。
  */
 
 @Service
@@ -17,12 +17,6 @@ import static cn.iocoder.yudao.module.reimbursement.enums.ErrorCodeConstants.REI
 public class ReimbursementInternalAuthService {
     private final ReimbursementProperties properties;
 
-    /**
-     * 校验并获取数据。
-     * 
-     * @param h 内部认证请求头
-     * @return 处理结果
-     */
 
     public void requireAuthorized(String h) {
         String token = h != null && h.startsWith("Bearer ") ? h.substring(7) : "";

@@ -5,7 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 请求参数。
+ * 报销邮箱连接分页查询请求。
  */
 
 @Data

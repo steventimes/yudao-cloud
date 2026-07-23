@@ -10,17 +10,11 @@ import java.util.*;
 import cn.iocoder.yudao.module.reimbursement.dal.dataobject.ReimbursementAttachmentDO;
 
 /**
- * ReimbursementAttachmentMapper，数据库访问 Mapper。
+ * 报销附件数据库访问 Mapper。
  */
 
 @Mapper
 public interface ReimbursementAttachmentMapper extends BaseMapperX<ReimbursementAttachmentDO> {
-    /**
-     * 查询数据。
-     * 
-     * @param reimbursementId 报销单编号
-     * @return 处理结果
-     */
     default List<ReimbursementAttachmentDO> selectListByReimbursementId(Long reimbursementId) {
         return selectList(ReimbursementAttachmentDO::getReimbursementId, reimbursementId);
     }
@@ -62,6 +56,15 @@ public interface ReimbursementAttachmentMapper extends BaseMapperX<Reimbursement
             """)
     int clearItemIdByReimbursementId(@Param("reimbursementId") Long reimbursementId,
             @Param("tenantId") Long tenantId);
+
+    /**
+     * 软删除报销单下的附件。
+     */
+    default int deleteByReimbursementId(Long reimbursementId, Long tenantId) {
+        return delete(new LambdaQueryWrapperX<ReimbursementAttachmentDO>()
+                .eq(ReimbursementAttachmentDO::getReimbursementId, reimbursementId)
+                .eq(ReimbursementAttachmentDO::getTenantId, tenantId));
+    }
 
     /**
      * 更新指定附件所属的报销明细。

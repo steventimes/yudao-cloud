@@ -17,8 +17,6 @@ import static cn.iocoder.yudao.module.reimbursement.enums.ErrorCodeConstants.REI
 
 /**
  * 报销邮箱授权码加解密器
- * 
- * @author Codex
  */
 @Component
 @RequiredArgsConstructor
@@ -32,12 +30,6 @@ public class ReimbursementCredentialCipher {
     private final SecureRandom secureRandom = new SecureRandom();
     private final ReimbursementProperties reimbursementProperties;
 
-    /**
-     * 加密敏感数据。
-     * 
-     * @param plaintext 待加密的明文授权码
-     * @return 处理结果
-     */
 
     public String encrypt(String plaintext) {
         try {

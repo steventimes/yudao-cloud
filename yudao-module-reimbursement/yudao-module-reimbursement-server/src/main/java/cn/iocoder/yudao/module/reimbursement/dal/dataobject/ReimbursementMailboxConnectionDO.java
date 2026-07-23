@@ -11,8 +11,6 @@ import java.time.LocalDateTime;
 
 /**
  * 用户报销邮箱绑定 DO
- * 
- * @author Codex
  */
 @TableName("reimbursement_mailbox_connection")
 @Data
@@ -30,7 +28,7 @@ public class ReimbursementMailboxConnectionDO extends TenantBaseDO {
     private String imapHost;
     private Integer imapPort;
     private String tlsVerification;
-    /** 字段 credentialCiphertext。 */
+    /** 加密存储的邮箱授权码。 */
     @ToString.Exclude
     private String credentialCiphertext;
     /** 状态。 */

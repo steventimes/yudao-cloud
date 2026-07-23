@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import static cn.iocoder.yudao.framework.common.util.date.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
 
 /**
- * 请求参数。
+ * 报销单分页查询请求。
  */
 
 @Data

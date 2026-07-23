@@ -32,9 +32,7 @@ import java.util.regex.Pattern;
 import static cn.iocoder.yudao.module.reimbursement.enums.ErrorCodeConstants.*;
 
 /**
- * 报销 AI 回调 Service 实现类
- * 
- * @author Codex
+ * 报销 AI 附件暂存与识别结果回填服务实现。
  */
 @Service
 @RequiredArgsConstructor
@@ -53,17 +51,6 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
     private final ReimbursementClaimService claimService;
     private final TransactionTemplate transactionTemplate;
 
-    /**
-     * 上传报销附件。
-     * 
-     * @param tenantId           租户编号
-     * @param reimbursementId    报销单编号
-     * @param externalArtifactId 外部附件产物编号
-     * @param sha256             文件 SHA-256 摘要
-     * @param documentType       单据类型
-     * @param file               上传的附件文件
-     * @return 处理结果
-     */
     @Override
     @Transactional
     public ReimbursementAiArtifactUploadRespVO uploadAiArtifact(Long tenantId, Long reimbursementId,
@@ -106,14 +93,6 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
         attachmentMapper.insert(attachment);
         return buildArtifactUploadRespVO(attachment);
     }
-
-    /**
-     * 应用 AI 识别结果。
-     * 
-     * @param tenantId 租户编号
-     * @param reqVO    请求参数对象
-     * @return 处理结果
-     */
 
     @Override
     public ReimbursementAiFillRespVO applyAiFill(Long tenantId, ReimbursementAiFillReqVO reqVO) {
@@ -164,7 +143,7 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
     }
 
     /**
-     * 校验ArtifactRequest参数。
+     * 校验附件标识、声明哈希格式、类型和大小。
      * 
      * @param externalArtifactId 外部附件产物编号
      * @param sha256             文件 SHA-256 摘要
@@ -182,7 +161,7 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
     }
 
     /**
-     * 获取并校验AiEmailClaim数据。
+     * 查询 AI 邮件来源的报销单。
      * 
      * @param reimbursementId 报销单编号
      */
@@ -198,7 +177,7 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
     }
 
     /**
-     * 校验AiFill参数。
+     * 校验 AI 回填的币种、置信度、明细和附件引用。
      * 
      * @param reqVO 请求参数对象
      */
@@ -246,7 +225,7 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
     }
 
     /**
-     * 创建并保存AiItem数据。
+     * 保存一条 AI 识别报销明细。
      * 
      * @param reimbursementId 报销单编号
      * @param itemReqVO       报销明细请求对象
@@ -261,7 +240,7 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
     }
 
     /**
-     * 关联Attachments数据。
+     * 把已暂存附件关联到报销明细。
      * 
      * @param reimbursementId     报销单编号
      * @param itemId              明细编号
@@ -274,7 +253,7 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
     }
 
     /**
-     * 处理readFileBytes逻辑。
+     * 读取上传附件；读取失败统一按无效附件处理。
      * 
      * @param file 上传的附件文件
      */
@@ -287,9 +266,9 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
     }
 
     /**
-     * 处理sha256Hex逻辑。
+     * 计算附件内容的 SHA-256 摘要。
      * 
-     * @param content 方法调用所需的content数据
+     * @param content 附件二进制内容
      */
     private String sha256Hex(byte[] content) {
         try {
@@ -306,7 +285,7 @@ public class ReimbursementAiServiceImpl implements ReimbursementAiService {
     }
 
     /**
-     * 构建ArtifactUploadRespVO结果。
+     * 构造附件暂存响应。
      * 
      * @param attachment 附件数据
      */

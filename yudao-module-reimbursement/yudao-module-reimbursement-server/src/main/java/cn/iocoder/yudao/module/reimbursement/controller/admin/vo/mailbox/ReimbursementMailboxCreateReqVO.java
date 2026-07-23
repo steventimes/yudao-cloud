@@ -5,15 +5,15 @@ import jakarta.validation.constraints.Email;
 import lombok.Data;
 
 /**
- * 请求参数。
+ * 创建报销邮箱连接请求。
  */
 
 @Data
 public class ReimbursementMailboxCreateReqVO {
-    /** 字段 providerCode。 */
+    /** 邮箱服务商编码。 */
     @NotBlank
     private String providerCode;
-    /** 字段 email。 */
+    /** 邮箱地址。 */
     @Email
     @NotBlank
     private String email;

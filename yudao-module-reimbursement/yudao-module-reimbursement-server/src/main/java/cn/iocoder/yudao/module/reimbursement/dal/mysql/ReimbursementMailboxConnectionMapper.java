@@ -11,7 +11,7 @@ import cn.iocoder.yudao.module.reimbursement.dal.dataobject.ReimbursementMailbox
 import cn.iocoder.yudao.module.reimbursement.controller.admin.vo.mailbox.ReimbursementMailboxPageReqVO;
 
 /**
- * ReimbursementMailboxConnectionMapper，数据库访问 Mapper。
+ * 报销邮箱连接数据库访问 Mapper。
  */
 
 @Mapper
@@ -20,19 +20,12 @@ public interface ReimbursementMailboxConnectionMapper extends BaseMapperX<Reimbu
     @Delete("""
             DELETE FROM reimbursement_mailbox_connection
             WHERE id = #{id}
-              AND tenant_id = #{tenantId}
-              AND owner_user_id = #{ownerUserId}
+            AND tenant_id = #{tenantId}
+            AND owner_user_id = #{ownerUserId}
             """)
     int deletePermanently(@Param("id") Long id, @Param("tenantId") Long tenantId,
             @Param("ownerUserId") Long ownerUserId);
 
-    /**
-     * 查询数据。
-     * 
-     * @param ownerUserId 邮箱绑定所属用户编号
-     * @param reqVO       请求参数对象
-     * @return 处理结果
-     */
     default PageResult<ReimbursementMailboxConnectionDO> selectPage(Long ownerUserId,
             ReimbursementMailboxPageReqVO reqVO) {
         return selectPage(reqVO,

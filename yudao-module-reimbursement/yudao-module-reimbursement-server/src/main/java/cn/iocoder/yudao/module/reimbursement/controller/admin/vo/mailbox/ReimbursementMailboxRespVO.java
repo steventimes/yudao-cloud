@@ -4,7 +4,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 响应结果。
+ * 报销邮箱连接响应，不包含邮箱授权码。
  */
 
 @Data

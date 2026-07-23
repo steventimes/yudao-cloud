@@ -3,7 +3,7 @@ package cn.iocoder.yudao.module.reimbursement.controller.internal.vo;
 import lombok.Data;
 
 /**
- * 响应结果。
+ * 内部邮箱连接解析结果，包含短期授权范围内的解密凭据。
  */
 
 @Data

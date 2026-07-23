@@ -5,18 +5,18 @@ import lombok.Data;
 import java.time.LocalDate;
 
 /**
- * 请求参数。
+ * 启动邮件票据导入请求。
  */
 
 @Data
 public class ReimbursementMailImportStartReqVO {
     /** 邮箱连接编号。 */
-    @NotNull
+    @NotNull(message = "请选择邮箱连接")
     private Long mailboxConnectionId;
     /** 邮箱文件夹。 */
     private String folder = "INBOX";
     /** 回溯天数。 */
-    private Integer lookbackDays = 30;
+    private Integer lookbackDays;
     /** 起始日期。 */
     private LocalDate fromDate;
     /** 结束日期。 */
@@ -28,7 +28,7 @@ public class ReimbursementMailImportStartReqVO {
     /** 发件人过滤关键字。 */
     private String senderContains;
     /** 最大处理邮件数。 */
-    @Min(1)
-    @Max(50)
+    @Min(value = 1, message = "最大处理邮件数不能小于 1")
+    @Max(value = 50, message = "最大处理邮件数不能大于 50")
     private Integer maxMessages = 20;
 }

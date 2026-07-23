@@ -8,7 +8,7 @@ import java.time.*;
 import java.util.*;
 
 /**
- * 响应结果。
+ * 报销单详情响应。
  */
 
 @Data

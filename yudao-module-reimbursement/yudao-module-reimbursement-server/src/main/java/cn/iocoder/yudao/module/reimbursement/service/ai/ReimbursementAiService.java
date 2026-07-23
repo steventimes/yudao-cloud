@@ -4,22 +4,16 @@ import cn.iocoder.yudao.module.reimbursement.controller.internal.vo.*;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * 报销 AI 回调 Service
- * 
- * @author Codex
+ * Dify Workflow 与邮件插件调用的报销内部服务。
  */
 public interface ReimbursementAiService {
 
+    /** 校验内容哈希后暂存 Dify/邮件插件上传的报销附件。 */
     ReimbursementAiArtifactUploadRespVO uploadAiArtifact(Long tenantId, Long reimbursementId,
             String externalArtifactId, String sha256,
             String documentType, MultipartFile file);
 
-    /**
-     * 应用 AI 识别结果
-     * 
-     * @param tenantId 租户编号
-     * @param reqVO    请求参数对象
-     */
+    /** 校验并应用 AI 识别结果，按配置保留待确认草稿或尝试自动提交。 */
     ReimbursementAiFillRespVO applyAiFill(Long tenantId, ReimbursementAiFillReqVO reqVO);
 
 }

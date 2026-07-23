@@ -12,6 +12,8 @@ public interface ErrorCodeConstants {
     ErrorCode REIMBURSEMENT_CLAIM_NOT_OWNER = new ErrorCode(1_070_000_001, "无权访问该报销单");
     /** 报销单状态不允许操作。 */
     ErrorCode REIMBURSEMENT_CLAIM_STATUS_INVALID = new ErrorCode(1_070_000_002, "报销单状态不允许该操作");
+    /** 报销单删除状态不允许。 */
+    ErrorCode REIMBURSEMENT_CLAIM_DELETE_STATUS_INVALID = new ErrorCode(1_070_000_020, "仅草稿或 AI 失败报销单可删除");
     /** 报销明细为空。 */
     ErrorCode REIMBURSEMENT_ITEM_EMPTY = new ErrorCode(1_070_000_003, "报销明细不能为空");
     /** 报销明细不合法。 */
@@ -46,4 +48,6 @@ public interface ErrorCodeConstants {
     ErrorCode REIMBURSEMENT_AI_ATTACHMENT_INVALID = new ErrorCode(1_070_000_018, "AI 附件不合法");
     /** AI 附件重复或冲突。 */
     ErrorCode REIMBURSEMENT_AI_ATTACHMENT_DUPLICATE = new ErrorCode(1_070_000_019, "AI 附件冲突");
+    /** 邮件时间筛选条件不合法。 */
+    ErrorCode REIMBURSEMENT_MAIL_FILTER_INVALID = new ErrorCode(1_070_000_021, "邮件时间筛选条件不合法");
 }

@@ -3,7 +3,7 @@ package cn.iocoder.yudao.module.reimbursement.controller.internal.vo;
 import lombok.Data;
 
 /**
- * 响应结果。
+ * AI 识别结果回填响应。
  */
 
 @Data

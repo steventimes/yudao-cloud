@@ -22,9 +22,7 @@ import java.util.Objects;
 import static cn.iocoder.yudao.module.reimbursement.enums.ErrorCodeConstants.*;
 
 /**
- * 报销邮箱绑定 Service 实现类
- * 
- * @author Codex
+ * 报销邮箱连接服务实现。
  */
 @Service
 @RequiredArgsConstructor
@@ -35,13 +33,6 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
     private final ReimbursementMailboxVerifier mailboxVerifier;
     private final ReimbursementProperties reimbursementProperties;
 
-    /**
-     * 创建报销数据。
-     * 
-     * @param userId      用户编号
-     * @param createReqVO 创建请求参数
-     * @return 处理结果
-     */
     @Override
     @Transactional
     public Long createMailbox(Long userId, ReimbursementMailboxCreateReqVO createReqVO) {
@@ -56,13 +47,6 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
         return mailboxConnection.getId();
     }
 
-    /**
-     * 更新报销数据。
-     * 
-     * @param userId      用户编号
-     * @param updateReqVO 更新请求参数
-     * @return 处理结果
-     */
     @Override
     @Transactional
     public void updateMailbox(Long userId, ReimbursementMailboxUpdateReqVO updateReqVO) {
@@ -77,13 +61,6 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
         mailboxConnectionMapper.updateById(mailboxConnection);
     }
 
-    /**
-     * 验证邮箱配置。
-     * 
-     * @param userId 用户编号
-     * @param id     记录编号
-     * @return 处理结果
-     */
     @Override
     @Transactional
     public ReimbursementMailboxVerifyRespVO verifyMailbox(Long userId, Long id) {
@@ -104,26 +81,12 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
         return verifyRespVO;
     }
 
-    /**
-     * 查询单条报销数据。
-     * 
-     * @param userId 用户编号
-     * @param id     记录编号
-     * @return 处理结果
-     */
 
     @Override
     public ReimbursementMailboxRespVO getMailbox(Long userId, Long id) {
         return buildMailboxRespVO(requireOwnedMailbox(userId, id));
     }
 
-    /**
-     * 查询单条报销数据。
-     * 
-     * @param userId    用户编号
-     * @param pageReqVO 分页查询参数
-     * @return 处理结果
-     */
 
     @Override
     public PageResult<ReimbursementMailboxRespVO> getMailboxPage(Long userId,
@@ -132,13 +95,6 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
         return new PageResult<>(CollectionUtils.convertList(page.getList(), this::buildMailboxRespVO), page.getTotal());
     }
 
-    /**
-     * 删除报销数据。
-     * 
-     * @param userId 用户编号
-     * @param id     记录编号
-     * @return 处理结果
-     */
 
     @Override
     public void deleteMailbox(Long userId, Long id) {
@@ -150,13 +106,6 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
         }
     }
 
-    /**
-     * 校验并获取数据。
-     * 
-     * @param userId 用户编号
-     * @param id     记录编号
-     * @return 处理结果
-     */
 
     @Override
     public ReimbursementMailboxConnectionDO requireVerifiedOwnedMailbox(Long userId, Long id) {
@@ -167,12 +116,6 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
         return mailboxConnection;
     }
 
-    /**
-     * 解析邮箱访问授权。
-     * 
-     * @param connectionId 邮箱连接编号
-     * @return 处理结果
-     */
 
     @Override
     public ResolvedMailboxCredential resolveCredentialForInternalUse(Long connectionId) {
@@ -226,7 +169,7 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
     }
 
     /**
-     * 获取并校验OwnedMailbox数据。
+     * 查询当前用户拥有的邮箱连接。
      * 
      * @param userId 用户编号
      * @param id     记录编号
@@ -240,9 +183,9 @@ public class ReimbursementMailboxServiceImpl implements ReimbursementMailboxServ
     }
 
     /**
-     * 构建MailboxRespVO结果。
+     * 转换为不包含邮箱授权码的管理端响应。
      * 
-     * @param mailboxConnection 方法调用所需的mailboxConnection数据
+     * @param mailboxConnection 邮箱连接数据
      */
     private ReimbursementMailboxRespVO buildMailboxRespVO(ReimbursementMailboxConnectionDO mailboxConnection) {
         return BeanUtils.toBean(mailboxConnection, ReimbursementMailboxRespVO.class);

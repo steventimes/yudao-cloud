@@ -3,7 +3,7 @@ package cn.iocoder.yudao.module.reimbursement.controller.admin.vo.mailbox;
 import lombok.Data;
 
 /**
- * 响应结果。
+ * 邮箱连接验证结果。
  */
 
 @Data

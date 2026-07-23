@@ -3,19 +3,14 @@ package cn.iocoder.yudao.module.reimbursement.service.mailimport;
 import java.time.LocalDate;
 
 /**
- * 报销 Dify Workflow 客户端
- * 
- * @author Codex
+ * 报销邮件导入 Dify Workflow 客户端。
  */
 public interface ReimbursementDifyClient {
 
+    /** 校验 Dify 已启用且 API 地址和 Workflow Key 均已配置。 */
     void requireConfigured();
 
-    /**
-     * 执行 run 业务操作。
-     * 
-     * @param request Dify 工作流执行请求
-     */
+    /** 阻塞执行 Dify Workflow，并返回运行编号。 */
     ReimbursementDifyRunResult run(ReimbursementDifyRunRequest request);
 
     /**

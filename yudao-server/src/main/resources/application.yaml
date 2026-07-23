@@ -350,6 +350,20 @@ yudao:
       - sms_template
       - iot:device
       - iot:thing_model_list
+  reimbursement:
+    ai:
+      submit-mode: ${YUDAO_REIMBURSEMENT_AI_SUBMIT_MODE:DRAFT_ONLY}
+    dify:
+      enabled: ${YUDAO_REIMBURSEMENT_DIFY_ENABLED:false}
+      api-base-url: ${DIFY_API_BASE_URL:}
+      api-key: ${DIFY_REIMBURSEMENT_WORKFLOW_API_KEY:}
+      timeout-millis: ${DIFY_REIMBURSEMENT_TIMEOUT_MILLIS:300000}
+    mailbox:
+      allow-custom-provider: ${YUDAO_REIMBURSEMENT_ALLOW_CUSTOM_MAILBOX:false}
+      encryption-key: ${YUDAO_REIMBURSEMENT_MAILBOX_ENCRYPTION_KEY:}
+      access-token-ttl-minutes: ${YUDAO_REIMBURSEMENT_MAIL_ACCESS_TTL_MINUTES:15}
+    internal:
+      service-token: ${YUDAO_REIMBURSEMENT_INTERNAL_SERVICE_TOKEN:}
   sms-code: # 短信验证码相关的配置项
     expire-times: 10m
     send-frequency: 1m

@@ -10,17 +10,11 @@ import java.util.*;
 import cn.iocoder.yudao.module.reimbursement.dal.dataobject.ReimbursementItemDO;
 
 /**
- * ReimbursementItemMapper，数据库访问 Mapper。
+ * 报销费用明细数据库访问 Mapper。
  */
 
 @Mapper
 public interface ReimbursementItemMapper extends BaseMapperX<ReimbursementItemDO> {
-    /**
-     * 查询数据。
-     * 
-     * @param reimbursementId 报销单编号
-     * @return 处理结果
-     */
     default List<ReimbursementItemDO> selectListByReimbursementId(Long reimbursementId) {
         return selectList(ReimbursementItemDO::getReimbursementId, reimbursementId);
     }
@@ -33,7 +27,7 @@ public interface ReimbursementItemMapper extends BaseMapperX<ReimbursementItemDO
     @Delete("""
             DELETE FROM reimbursement_item
             WHERE reimbursement_id = #{reimbursementId}
-              AND tenant_id = #{tenantId}
+            AND tenant_id = #{tenantId}
             """)
     int deletePermanentlyByReimbursementId(@Param("reimbursementId") Long reimbursementId,
             @Param("tenantId") Long tenantId);

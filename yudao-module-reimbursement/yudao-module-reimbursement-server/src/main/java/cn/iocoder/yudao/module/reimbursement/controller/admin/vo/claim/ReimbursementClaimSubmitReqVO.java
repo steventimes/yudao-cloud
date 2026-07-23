@@ -8,7 +8,7 @@ import java.time.*;
 import java.util.*;
 
 /**
- * 请求参数。
+ * 提交报销审批请求。
  */
 
 @Data

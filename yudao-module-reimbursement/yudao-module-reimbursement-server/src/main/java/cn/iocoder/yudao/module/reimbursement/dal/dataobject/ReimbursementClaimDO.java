@@ -12,8 +12,6 @@ import java.time.LocalDateTime;
 
 /**
  * 报销申请 DO
- * 
- * @author Codex
  */
 @TableName("reimbursement_claim")
 @Data

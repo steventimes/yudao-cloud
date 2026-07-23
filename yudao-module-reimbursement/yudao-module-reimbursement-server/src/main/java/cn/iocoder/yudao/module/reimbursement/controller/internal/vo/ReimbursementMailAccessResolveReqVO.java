@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 /**
- * 请求参数。
+ * 邮箱短期访问令牌解析请求。
  */
 
 @Data
@@ -16,7 +16,7 @@ public class ReimbursementMailAccessResolveReqVO {
     @NotBlank
     private String mailAccessToken;
 
-    /** 字段 operation。 */
+    /** 本次请求的邮箱操作，仅允许 SEARCH 或 FETCH。 */
     @NotBlank
     private String operation;
 

@@ -27,9 +27,7 @@ import static cn.iocoder.yudao.framework.common.exception.util.ServiceExceptionU
 import static cn.iocoder.yudao.module.reimbursement.enums.ErrorCodeConstants.*;
 
 /**
- * 报销内部 RPC Controller
- * 
- * @author Codex
+ * 报销内部接口，供 Dify Workflow 和邮件插件调用。
  */
 @RestController
 @RequestMapping(ApiConstants.PREFIX)
@@ -44,18 +42,11 @@ public class ReimbursementInternalController {
     private final ReimbursementMailboxService mailboxService;
     private final ReimbursementAiService aiService;
 
-    /**
-     * 解析邮箱访问授权。
-     * 
-     * @param authorizationHeader 内部服务认证请求头
-     * @param reqVO               请求参数对象
-     * @return 处理结果
-     */
 
     @ApiAccessLog(requestEnable = false, responseEnable = false)
     @PostMapping("/mail-access/resolve")
     public CommonResult<ReimbursementMailAccessResolveRespVO> resolveMailboxAccess(
-            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             @Valid @RequestBody ReimbursementMailAccessResolveReqVO reqVO) {
         internalAuthService.requireAuthorized(authorizationHeader);
         ReimbursementMailAccessGrant grant = grantService.requireGrant(
@@ -63,23 +54,11 @@ public class ReimbursementInternalController {
         return success(TenantUtils.execute(grant.getTenantId(), () -> buildMailboxAccessRespVO(grant)));
     }
 
-    /**
-     * 上传报销附件。
-     * 
-     * @param authorizationHeader 内部服务认证请求头
-     * @param tenantId            租户编号
-     * @param reimbursementId     报销单编号
-     * @param externalArtifactId  外部附件产物编号
-     * @param sha256              文件 SHA-256 摘要
-     * @param documentType        单据类型
-     * @param file                上传的附件文件
-     * @return 处理结果
-     */
 
     @ApiAccessLog(requestEnable = false, responseEnable = false)
     @PostMapping("/ai-artifact/upload")
     public CommonResult<ReimbursementAiArtifactUploadRespVO> uploadAiArtifact(
-            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             @RequestParam Long tenantId,
             @RequestParam Long reimbursementId,
             @RequestParam String externalArtifactId,
@@ -91,18 +70,11 @@ public class ReimbursementInternalController {
                 tenantId, reimbursementId, externalArtifactId, sha256, documentType, file)));
     }
 
-    /**
-     * 应用 AI 识别结果。
-     * 
-     * @param authorizationHeader 内部服务认证请求头
-     * @param reqVO               请求参数对象
-     * @return 处理结果
-     */
 
     @ApiAccessLog(requestEnable = false, responseEnable = false)
     @PostMapping("/ai-fill")
     public CommonResult<ReimbursementAiFillRespVO> applyAiFill(
-            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             @Valid @RequestBody ReimbursementAiFillReqVO reqVO) {
         internalAuthService.requireAuthorized(authorizationHeader);
         return success(
@@ -110,7 +82,7 @@ public class ReimbursementInternalController {
     }
 
     /**
-     * 构建MailboxAccessRespVO结果。
+     * 根据短期授权加载并解密邮箱连接。
      * 
      * @param grant 邮箱访问授权记录
      */

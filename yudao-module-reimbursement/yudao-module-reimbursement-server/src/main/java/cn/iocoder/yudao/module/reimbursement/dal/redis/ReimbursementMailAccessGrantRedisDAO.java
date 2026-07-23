@@ -10,8 +10,6 @@ import java.time.Duration;
 
 /**
  * 报销邮箱短期访问授权 Redis DAO
- * 
- * @author Codex
  */
 @Repository
 @RequiredArgsConstructor
@@ -33,7 +31,7 @@ public class ReimbursementMailAccessGrantRedisDAO {
     }
 
     /**
-     * 构建Key结果。
+     * 构造邮箱短期访问授权的 Redis Key。
      * 
      * @param rawToken 原始访问令牌
      */

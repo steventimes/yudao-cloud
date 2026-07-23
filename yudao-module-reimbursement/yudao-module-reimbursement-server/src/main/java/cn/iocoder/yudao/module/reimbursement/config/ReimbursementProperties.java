@@ -5,7 +5,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * ReimbursementProperties，配置属性对象。
+ * 智能报销模块配置。
  */
 
 @Data

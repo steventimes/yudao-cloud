@@ -8,7 +8,7 @@ import java.time.*;
 import java.util.*;
 
 /**
- * 请求参数。
+ * 人工创建报销单请求。
  */
 
 @Data

@@ -9,8 +9,6 @@ import lombok.ToString;
 
 /**
  * 报销附件 DO
- * 
- * @author Codex
  */
 @TableName("reimbursement_attachment")
 @Data

@@ -1,3 +1,5 @@
+SET NAMES utf8mb4;
+
 CREATE TABLE IF NOT EXISTS `reimbursement_claim` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '编号',
   `reimbursement_no` varchar(64) NULL DEFAULT NULL COMMENT '报销单号',
@@ -26,6 +28,14 @@ CREATE TABLE IF NOT EXISTS `reimbursement_claim` (
   KEY `idx_reimbursement_claim_process` (`process_instance_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='报销申请';
 
+-- 兼容已经执行旧版 OA 报销脚本的数据库：按列幂等补齐当前实体读取的字段。
+SET @reimbursement_claim_upgrade_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `reimbursement_claim` ADD COLUMN `process_instance_id` varchar(64) NULL DEFAULT NULL COMMENT \'BPM 流程实例编号\' AFTER `status`', 'SELECT 1') FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'reimbursement_claim' AND column_name = 'process_instance_id');
+PREPARE reimbursement_claim_upgrade_stmt FROM @reimbursement_claim_upgrade_sql; EXECUTE reimbursement_claim_upgrade_stmt; DEALLOCATE PREPARE reimbursement_claim_upgrade_stmt;
+SET @reimbursement_claim_upgrade_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `reimbursement_claim` ADD COLUMN `mailbox_connection_id` bigint NULL DEFAULT NULL COMMENT \'来源邮箱绑定编号\' AFTER `source`', 'SELECT 1') FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'reimbursement_claim' AND column_name = 'mailbox_connection_id');
+PREPARE reimbursement_claim_upgrade_stmt FROM @reimbursement_claim_upgrade_sql; EXECUTE reimbursement_claim_upgrade_stmt; DEALLOCATE PREPARE reimbursement_claim_upgrade_stmt;
+SET @reimbursement_claim_upgrade_sql = (SELECT IF(COUNT(*) = 0, 'ALTER TABLE `reimbursement_claim` ADD COLUMN `ai_failure_message` varchar(512) NULL DEFAULT NULL COMMENT \'AI 失败原因\' AFTER `ai_confidence`', 'SELECT 1') FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'reimbursement_claim' AND column_name = 'ai_failure_message');
+PREPARE reimbursement_claim_upgrade_stmt FROM @reimbursement_claim_upgrade_sql; EXECUTE reimbursement_claim_upgrade_stmt; DEALLOCATE PREPARE reimbursement_claim_upgrade_stmt;
+
 CREATE TABLE IF NOT EXISTS `reimbursement_item` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '编号',
   `reimbursement_id` bigint NOT NULL COMMENT '报销编号',
@@ -49,6 +59,22 @@ CREATE TABLE IF NOT EXISTS `reimbursement_item` (
   UNIQUE KEY `uk_reimbursement_item_client` (`tenant_id`, `reimbursement_id`, `client_item_id`) USING BTREE,
   KEY `idx_reimbursement_item_claim` (`tenant_id`, `reimbursement_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='报销明细';
+
+-- 兼容旧数据库：幂等重建明细唯一索引。
+SET @reimbursement_item_index_sql = (
+  SELECT IF(
+    COUNT(*) = 0,
+    'ALTER TABLE `reimbursement_item` ADD UNIQUE KEY `uk_reimbursement_item_client` (`tenant_id`, `reimbursement_id`, `client_item_id`) USING BTREE',
+    'ALTER TABLE `reimbursement_item` DROP INDEX `uk_reimbursement_item_client`, ADD UNIQUE KEY `uk_reimbursement_item_client` (`tenant_id`, `reimbursement_id`, `client_item_id`) USING BTREE'
+  )
+  FROM information_schema.statistics
+  WHERE table_schema = DATABASE()
+    AND table_name = 'reimbursement_item'
+    AND index_name = 'uk_reimbursement_item_client'
+);
+PREPARE reimbursement_item_index_stmt FROM @reimbursement_item_index_sql;
+EXECUTE reimbursement_item_index_stmt;
+DEALLOCATE PREPARE reimbursement_item_index_stmt;
 
 CREATE TABLE IF NOT EXISTS `reimbursement_attachment` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '编号',
@@ -97,6 +123,12 @@ CREATE TABLE IF NOT EXISTS `reimbursement_mailbox_connection` (
   KEY `idx_reimbursement_mailbox_owner_status` (`tenant_id`, `owner_user_id`, `status`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户报销邮箱绑定';
 
+-- 修复旧版脚本在非 utf8mb4 连接下写入的菜单乱码。
+UPDATE `system_menu`
+SET `name` = CONVERT(BINARY CONVERT(`name` USING latin1) USING utf8mb4)
+WHERE `id` BETWEEN 12510100 AND 12510107
+  AND HEX(`name`) LIKE 'C3A6E284A2%';
+
 -- 智能报销菜单：只插入页面菜单和按钮权限，不插入角色绑定。
 INSERT INTO `system_menu` (`id`, `name`, `permission`, `type`, `sort`, `parent_id`, `path`, `icon`, `component`, `component_name`, `status`, `visible`, `keep_alive`, `always_show`, `creator`, `create_time`, `updater`, `update_time`, `deleted`) VALUES
 (12510100, '智能报销', '', 2, 90, 1185, 'reimbursement', 'fa:money', 'reimbursement/index', 'ReimbursementClaim', 0, b'1', b'1', b'1', 'admin', '2026-07-20 00:00:00', 'admin', '2026-07-20 00:00:00', b'0'),
@@ -106,7 +138,8 @@ INSERT INTO `system_menu` (`id`, `name`, `permission`, `type`, `sort`, `parent_i
 (12510104, '智能报销更新/确认', 'reimbursement:claim:update', 3, 4, 12510100, '', '', '', NULL, 0, b'1', b'1', b'1', 'admin', '2026-07-20 00:00:00', 'admin', '2026-07-20 00:00:00', b'0'),
 (12510105, '智能报销提交', 'reimbursement:claim:submit', 3, 5, 12510100, '', '', '', NULL, 0, b'1', b'1', b'1', 'admin', '2026-07-20 00:00:00', 'admin', '2026-07-20 00:00:00', b'0'),
 (12510106, '智能报销邮箱管理', 'reimbursement:mailbox:manage', 3, 6, 12510100, '', '', '', NULL, 0, b'1', b'1', b'1', 'admin', '2026-07-20 00:00:00', 'admin', '2026-07-20 00:00:00', b'0'),
-(12510107, '智能报销邮箱导入', 'reimbursement:mail-import:start', 3, 7, 12510100, '', '', '', NULL, 0, b'1', b'1', b'1', 'admin', '2026-07-20 00:00:00', 'admin', '2026-07-20 00:00:00', b'0')
+(12510107, '智能报销邮箱导入', 'reimbursement:mail-import:start', 3, 7, 12510100, '', '', '', NULL, 0, b'1', b'1', b'1', 'admin', '2026-07-20 00:00:00', 'admin', '2026-07-20 00:00:00', b'0'),
+(12510108, '智能报销删除', 'reimbursement:claim:delete', 3, 8, 12510100, '', '', '', NULL, 0, b'1', b'1', b'1', 'admin', '2026-07-20 00:00:00', 'admin', '2026-07-20 00:00:00', b'0')
 ON DUPLICATE KEY UPDATE
   `name` = VALUES(`name`),
   `permission` = VALUES(`permission`),

@@ -14,24 +14,12 @@ import static cn.iocoder.yudao.module.reimbursement.enums.ErrorCodeConstants.REI
 
 /**
  * Jakarta Mail 邮箱连接验证器
- * 
- * @author Codex
  */
 @Component
 public class JakartaMailReimbursementMailboxVerifier implements ReimbursementMailboxVerifier {
 
     private static final Set<String> INSECURE_DEV_ALLOWED_HOSTS = Set.of("greenmail", "localhost", "127.0.0.1", "::1");
 
-    /**
-     * 验证邮箱配置。
-     * 
-     * @param host              邮箱服务器地址
-     * @param port              邮箱服务器端口
-     * @param username          邮箱用户名
-     * @param authorizationCode 邮箱授权码
-     * @param tlsVerification   TLS 校验模式
-     * @return 处理结果
-     */
 
     @Override
     public void verify(String host, int port, String username, String authorizationCode, String tlsVerification) {
@@ -54,7 +42,7 @@ public class JakartaMailReimbursementMailboxVerifier implements ReimbursementMai
     }
 
     /**
-     * 校验TlsVerification参数。
+     * 校验 TLS 模式；不安全模式仅允许本机测试地址。
      * 
      * @param host            邮箱服务器地址
      * @param tlsVerification TLS 校验模式
@@ -69,7 +57,7 @@ public class JakartaMailReimbursementMailboxVerifier implements ReimbursementMai
     }
 
     /**
-     * 构建MailProperties结果。
+     * 构造 IMAPS 连接属性。
      * 
      * @param tlsVerification TLS 校验模式
      */
@@ -88,9 +76,9 @@ public class JakartaMailReimbursementMailboxVerifier implements ReimbursementMai
     }
 
     /**
-     * 处理closeQuietly逻辑。
+     * 安静关闭 Jakarta Mail 资源，避免覆盖原始连接异常。
      * 
-     * @param folder 方法调用所需的folder数据
+     * @param folder IMAP 文件夹
      */
     private void closeQuietly(Folder folder) {
         try {
@@ -102,9 +90,9 @@ public class JakartaMailReimbursementMailboxVerifier implements ReimbursementMai
     }
 
     /**
-     * 处理closeQuietly逻辑。
+     * 安静关闭 Jakarta Mail 资源，避免覆盖原始连接异常。
      * 
-     * @param store 方法调用所需的store数据
+     * @param store IMAP 连接
      */
     private void closeQuietly(Store store) {
         try {

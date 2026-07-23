@@ -20,8 +20,6 @@ import static cn.iocoder.yudao.module.reimbursement.enums.ErrorCodeConstants.REI
 
 /**
  * 报销邮箱短期访问授权 Service
- * 
- * @author Codex
  */
 @Service
 @RequiredArgsConstructor
@@ -33,14 +31,6 @@ public class ReimbursementMailAccessGrantService {
     private final ReimbursementMailAccessGrantRedisDAO grantRedisDAO;
     private final ReimbursementProperties reimbursementProperties;
 
-    /**
-     * 执行 issue 业务操作。
-     * 
-     * @param tenantId            租户编号
-     * @param userId              用户编号
-     * @param mailboxConnectionId 邮箱连接编号
-     * @return 处理结果
-     */
 
     public String issue(Long tenantId, Long userId, Long mailboxConnectionId) {
         String rawToken = generateRawToken();
