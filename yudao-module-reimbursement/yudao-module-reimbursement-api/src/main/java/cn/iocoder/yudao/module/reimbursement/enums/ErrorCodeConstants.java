@@ -13,7 +13,7 @@ public interface ErrorCodeConstants {
     /** 报销单状态不允许操作。 */
     ErrorCode REIMBURSEMENT_CLAIM_STATUS_INVALID = new ErrorCode(1_070_000_002, "报销单状态不允许该操作");
     /** 报销单删除状态不允许。 */
-    ErrorCode REIMBURSEMENT_CLAIM_DELETE_STATUS_INVALID = new ErrorCode(1_070_000_020, "仅草稿或 AI 失败报销单可删除");
+    ErrorCode REIMBURSEMENT_CLAIM_DELETE_STATUS_INVALID = new ErrorCode(1_070_000_020, "仅草稿、AI 待确认或 AI 失败报销单可删除");
     /** 报销明细为空。 */
     ErrorCode REIMBURSEMENT_ITEM_EMPTY = new ErrorCode(1_070_000_003, "报销明细不能为空");
     /** 报销明细不合法。 */

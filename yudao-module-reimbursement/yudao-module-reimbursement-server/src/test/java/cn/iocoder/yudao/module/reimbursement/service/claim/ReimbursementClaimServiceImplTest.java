@@ -79,6 +79,36 @@ class ReimbursementClaimServiceImplTest {
     }
 
     @Test
+    void submitClaimAllowsPendingConfirmation() {
+        ReimbursementClaimMapper claimMapper = mock(ReimbursementClaimMapper.class);
+        ReimbursementItemMapper itemMapper = mock(ReimbursementItemMapper.class);
+        BpmProcessInstanceApi bpmProcessInstanceApi = mock(BpmProcessInstanceApi.class);
+        ReimbursementClaimDO claim = new ReimbursementClaimDO();
+        claim.setId(20L);
+        claim.setUserId(10L);
+        claim.setStatus(ReimbursementStatusEnum.PENDING_CONFIRMATION.getStatus());
+        claim.setTotalAmount(new BigDecimal("88.50"));
+        claim.setCurrency("CNY");
+        claim.setSource("AI_EMAIL");
+        when(claimMapper.selectOwnedById(20L, 10L)).thenReturn(claim);
+        when(itemMapper.selectListByReimbursementId(20L)).thenReturn(List.of(new ReimbursementItemDO()));
+        when(bpmProcessInstanceApi.createProcessInstance(eq(10L), any()))
+                .thenReturn(cn.iocoder.yudao.framework.common.pojo.CommonResult.success("process-20"));
+        ReimbursementClaimServiceImpl service = new ReimbursementClaimServiceImpl(claimMapper, itemMapper,
+                mock(ReimbursementAttachmentMapper.class), mock(AdminUserApi.class), bpmProcessInstanceApi,
+                mock(SecurityFrameworkService.class), mock(FileApi.class));
+        ReimbursementClaimSubmitReqVO request = new ReimbursementClaimSubmitReqVO();
+        request.setId(20L);
+
+        var result = service.submitClaim(10L, request);
+
+        assertEquals(20L, result.getReimbursementId());
+        assertEquals("process-20", result.getProcessInstanceId());
+        assertEquals(ReimbursementStatusEnum.SUBMITTED.getStatus(), claim.getStatus());
+        verify(claimMapper).updateById(claim);
+    }
+
+    @Test
     void updateClaimAllowsReusingClientItemIdAfterPhysicalDelete() {
         ReimbursementClaimMapper claimMapper = mock(ReimbursementClaimMapper.class);
         ReimbursementItemMapper itemMapper = mock(ReimbursementItemMapper.class);
@@ -148,6 +178,32 @@ class ReimbursementClaimServiceImplTest {
             order.verify(attachmentMapper).deleteByReimbursementId(4L, 1L);
             order.verify(itemMapper).deletePermanentlyByReimbursementId(4L, 1L);
             order.verify(claimMapper).deleteById(4L);
+        } finally {
+            TenantContextHolder.clear();
+        }
+    }
+
+    @Test
+    void deleteClaimRemovesPendingConfirmationAndItsRelatedData() {
+        ReimbursementClaimMapper claimMapper = mock(ReimbursementClaimMapper.class);
+        ReimbursementItemMapper itemMapper = mock(ReimbursementItemMapper.class);
+        ReimbursementAttachmentMapper attachmentMapper = mock(ReimbursementAttachmentMapper.class);
+        ReimbursementClaimDO claim = new ReimbursementClaimDO();
+        claim.setId(20L);
+        claim.setUserId(10L);
+        claim.setStatus(ReimbursementStatusEnum.PENDING_CONFIRMATION.getStatus());
+        when(claimMapper.selectOwnedById(20L, 10L)).thenReturn(claim);
+        ReimbursementClaimServiceImpl service = new ReimbursementClaimServiceImpl(claimMapper, itemMapper,
+                attachmentMapper, mock(AdminUserApi.class), mock(BpmProcessInstanceApi.class),
+                mock(SecurityFrameworkService.class), mock(FileApi.class));
+        TenantContextHolder.setTenantId(1L);
+        try {
+            service.deleteClaim(10L, 20L);
+            InOrder order = inOrder(attachmentMapper, itemMapper, claimMapper);
+            order.verify(attachmentMapper).clearItemIdByReimbursementId(20L, 1L);
+            order.verify(attachmentMapper).deleteByReimbursementId(20L, 1L);
+            order.verify(itemMapper).deletePermanentlyByReimbursementId(20L, 1L);
+            order.verify(claimMapper).deleteById(20L);
         } finally {
             TenantContextHolder.clear();
         }

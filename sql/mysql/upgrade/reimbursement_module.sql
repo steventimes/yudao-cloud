@@ -123,6 +123,17 @@ CREATE TABLE IF NOT EXISTS `reimbursement_mailbox_connection` (
   KEY `idx_reimbursement_mailbox_owner_status` (`tenant_id`, `owner_user_id`, `status`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户报销邮箱绑定';
 
+-- 清理历史 OA 报销示例菜单。旧菜单复用了 reimbursement/index 组件，
+-- 但权限仍指向已移除的 bpm:oa-reimbursement:* 接口，会产生重复入口和路由标题冲突。
+DELETE FROM `system_role_menu`
+WHERE `menu_id` BETWEEN 901180 AND 901186;
+UPDATE `system_menu`
+SET `deleted` = b'1',
+    `updater` = 'admin',
+    `update_time` = NOW()
+WHERE `id` BETWEEN 901180 AND 901186
+  AND (`id` = 901180 OR `permission` LIKE 'bpm:oa-reimbursement:%');
+
 -- 修复旧版脚本在非 utf8mb4 连接下写入的菜单乱码。
 UPDATE `system_menu`
 SET `name` = CONVERT(BINARY CONVERT(`name` USING latin1) USING utf8mb4)

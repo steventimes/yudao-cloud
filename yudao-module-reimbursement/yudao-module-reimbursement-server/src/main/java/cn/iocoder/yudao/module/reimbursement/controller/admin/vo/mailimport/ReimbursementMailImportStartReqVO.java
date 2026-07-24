@@ -16,6 +16,8 @@ public class ReimbursementMailImportStartReqVO {
     /** 邮箱文件夹。 */
     private String folder = "INBOX";
     /** 回溯天数。 */
+    @Min(value = 1, message = "回看天数不能小于 1")
+    @Max(value = 365, message = "回看天数不能大于 365")
     private Integer lookbackDays;
     /** 起始日期。 */
     private LocalDate fromDate;
@@ -24,7 +26,7 @@ public class ReimbursementMailImportStartReqVO {
     /** 是否仅处理未读邮件。 */
     private Boolean unreadOnly = false;
     /** 主题关键词。 */
-    private String subjectKeywords = "发票,票据,报销,invoice,receipt";
+    private String subjectKeywords = "发票,票据,报销,invoice,receipt,reimbursement";
     /** 发件人过滤关键字。 */
     private String senderContains;
     /** 最大处理邮件数。 */

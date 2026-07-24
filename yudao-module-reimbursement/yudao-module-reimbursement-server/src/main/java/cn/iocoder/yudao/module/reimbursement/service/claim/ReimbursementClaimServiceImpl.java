@@ -74,6 +74,7 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
     public void deleteClaim(Long userId, Long id) {
         ReimbursementClaimDO claim = requireOwnedClaim(userId, id);
         if (!CollectionUtils.containsAny(claim.getStatus(), ReimbursementStatusEnum.DRAFT.getStatus(),
+                ReimbursementStatusEnum.PENDING_CONFIRMATION.getStatus(),
                 ReimbursementStatusEnum.AI_FAILED.getStatus())) {
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_CLAIM_DELETE_STATUS_INVALID);
         }
@@ -88,7 +89,9 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
     @Transactional
     public void updateClaim(Long userId, ReimbursementClaimUpdateReqVO updateReqVO) {
         ReimbursementClaimDO claim = requireOwnedClaim(userId, updateReqVO.getId());
-        if (!CollectionUtils.containsAny(claim.getStatus(), 0, 20, 30)) {
+        if (!CollectionUtils.containsAny(claim.getStatus(), ReimbursementStatusEnum.DRAFT.getStatus(),
+                ReimbursementStatusEnum.PENDING_CONFIRMATION.getStatus(),
+                ReimbursementStatusEnum.AI_FAILED.getStatus())) {
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_CLAIM_STATUS_INVALID);
         }
         validateCurrency(updateReqVO.getCurrency());
@@ -124,7 +127,8 @@ public class ReimbursementClaimServiceImpl implements ReimbursementClaimService 
         if (StrUtil.isNotBlank(claim.getProcessInstanceId())) {
             return buildSubmitRespVO(claim);
         }
-        if (!Objects.equals(claim.getStatus(), ReimbursementStatusEnum.DRAFT.getStatus())) {
+        if (!CollectionUtils.containsAny(claim.getStatus(), ReimbursementStatusEnum.DRAFT.getStatus(),
+                ReimbursementStatusEnum.PENDING_CONFIRMATION.getStatus())) {
             throw ServiceExceptionUtil.exception(REIMBURSEMENT_CLAIM_STATUS_INVALID);
         }
         return submitInternal(userId, claim, submitReqVO.getStartUserSelectAssignees());
